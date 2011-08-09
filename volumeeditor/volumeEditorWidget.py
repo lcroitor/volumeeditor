@@ -351,6 +351,20 @@ if __name__ == "__main__":
                 source = ArraySource(testVolume(N))
                 
                 layerstack.append( GrayscaleLayer( source ) )
+            
+            elif "3dvol" in argv:
+                import h5py
+                import os
+                fname = os.path.split(os.path.abspath(__file__))[0] +"/_testing/l.h5"
+                if not os.path.exists(fname):
+                    print "please run _testin/labeled3d.py to make a l.h5 file"
+                    app.quit()
+                    sys.exit(1)
+                f = h5py.File(fname, 'r')
+                d = f["volume/data"]
+                print d.shape, d.dtype
+                source = ArraySource(d)
+                layerstack.append( GrayscaleLayer( source ) )
                 
             elif "comp" in argv:
                 fn = os.path.split(os.path.abspath(__file__))[0] +"/_testing/5d.npy"
@@ -372,6 +386,7 @@ if __name__ == "__main__":
                 source = nucleisrc
 
             elif "layers" in argv:
+                import os
                 fn = os.path.split(os.path.abspath(__file__))[0] +"/_testing/5d.npy"
                 raw = np.load(fn)
                 print "loading file '%s'" % fn
@@ -420,6 +435,7 @@ if __name__ == "__main__":
                 source = nucleisrc
 
             elif "label" in argv:
+                import os
                 fn = os.path.split(os.path.abspath(__file__))[0] +"/_testing/5d.npy"
                 raw = np.load(fn)
 
@@ -456,8 +472,12 @@ if __name__ == "__main__":
 
                 opImage  = operators.OpArrayPiper(g)
                 opImage.inputs["Input"].setValue(raw[:,:,:,:,0:1]/20)
+                opImage2  = operators.OpArrayPiper(g)
+                opImage2.inputs["Input"].setValue(raw[:,:,:,:,1:2]/10)
+                
                 opImageList = operators.Op5ToMulti(g)    
                 opImageList.inputs["Input0"].connect(opImage.outputs["Output"])
+                opImageList.inputs["Input1"].connect(opImage2.outputs["Output"])
 
 
                 opFeatureList = operators.Op5ToMulti(g)    
@@ -469,6 +489,8 @@ if __name__ == "__main__":
 #                opMulti = operators.Op20ToMulti(g)    
 #                opMulti.inputs["Input00"].connect(opG.outputs["Output"])
                 stacker.inputs["Images"].connect(opFeatureList.outputs["Outputs"])
+                stacker.inputs["AxisFlag"].setValue('c')
+                stacker.inputs["AxisIndex"].setValue(4)
                 
                 ################## Training
                 opMultiL = operators.Op5ToMulti(g)    
@@ -485,18 +507,23 @@ if __name__ == "__main__":
 
                 ################## Prediction
                 opPredict=operators.OpPredictRandomForest(g)
+                opPredict.inputs['LabelsCount'].setValue(2)
                 opPredict.inputs['Classifier'].connect(opClassifierCache.outputs['Output'])    
                 opPredict.inputs['Image'].connect(stacker.outputs['Output'])            
-                opPredict.inputs['LabelsCount'].setValue(2)
+
                 
                 
                 selector=operators.OpSingleChannelSelector(g)
                 selector.inputs["Input"].connect(opPredict.outputs['PMaps'])
                 selector.inputs["Index"].setValue(1)
                 
-                predictsrc = LazyflowSource(selector.outputs["Output"][0])
+                opSelCache = operators.OpArrayCache(g)
+                opSelCache.inputs["blockShape"].setValue((1,5,5,5,1))
+                opSelCache.inputs["Input"].connect(selector.outputs["Output"])                
                 
-                layer2 = GrayscaleLayer( predictsrc )
+                predictsrc = LazyflowSource(opSelCache.outputs["Output"][0])
+                
+                layer2 = GrayscaleLayer( predictsrc, normalize = (0.0,1.0) )
                 layer2.name = "Prediction"
                 layerstack.append( layer2 )
 
@@ -505,10 +532,6 @@ if __name__ == "__main__":
                 layerstack.append(layer3)                
                 source = nucleisrc
 
-            elif "stripes" in argv:
-                source = ArraySource(stripes(50,35,20))
-                
-                layerstack.append( GrayscaleLayer( source ) )
             else:
                 raise RuntimeError("Invalid testing mode")
             
@@ -533,25 +556,31 @@ if __name__ == "__main__":
                 self.editor = VolumeEditor(shape, layerstack, useGL=useGL)
 
             self.widget = VolumeEditorWidget( self.editor )
-            self.widget.show()
+            
+            if "3dvol" in argv:
+                self.widget._ve.posModel.cursorPositionChanged.connect(self.widget._updateInfoLabels)
             
             if not 't' in sys.argv:
                 #show some initial position
                 self.editor.posModel.slicingPos = [5,10,2]
             else:
                 def randomMove():
-                    self.editor.posModel.slicingPos = [numpy.random.randint(0,self.data.shape[i]) for i in range(3)]
+                    self.editor.posModel.slicingPos = [numpy.random.randint(0,shape[i]) for i in range(1,4)]
                 t = QTimer(self)
-                t.setInterval(1000)
+                t.setInterval(3000)
                 t.timeout.connect(randomMove)
                 t.start()
 
     app = QApplication(sys.argv)
     
-    args = ['hugeslab', 'cuboid', '5d', 'comp', 'layers', 'manylayers', 't', 'label', 'stripes']
+    args = ['hugeslab', 'cuboid', '5d', 'comp', 'layers', 'manylayers', 't', 'label', '3dvol']
     
     if len(sys.argv) < 2 or not any(x in sys.argv for x in args) :
         print "Usage: python volumeeditor.py <testmode> %r" % args 
+        app.quit()
+        sys.exit(0)
+    if len(sys.argv) == 2 and "t" in sys.argv:
+        print "the 't' modifier needs to be used together with one of the other options."
         app.quit()
         sys.exit(0)
     
