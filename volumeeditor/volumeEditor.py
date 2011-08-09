@@ -52,7 +52,7 @@ from pixelpipeline.imagesources import GrayscaleImageSource
 from pixelpipeline.imagesourcefactories import createImageSource
 from pixelpipeline.imagepump import ImagePump
 from slicingtools import SliceProjection
-
+from eventswitch import EventSwitch
 #*******************************************************************************
 # V o l u m e E d i t o r                                                      *
 #*******************************************************************************
@@ -114,23 +114,32 @@ class VolumeEditor( QObject ):
         self.imageViews.append(ImageView2D(self.imageScenes[2], useGL=useGL))
 
         for i in xrange(3):
+            #self.imageViews[i].drawing.connect(partial(self.updateLabels, axis=i))
             self.imageViews[i].customContextMenuRequested.connect(self.onCustomContextMenuRequested)
-
+        
+        
+        
+        
         # navigation control
         self.posModel     = PositionModel(self._shape)
         self.navCtrl      = NavigationControler(self.imageViews, syncedSliceSources, self.posModel)
         self.navInterpret = NavigationInterpreter(self.posModel)
-
+        
+        self.eventSwitch  = EventSwitch(self.imageViews,self.navInterpret)
+        
         # Add label widget to toolBoxLayout
         self.labelWidget = None
         
         # some auxiliary stuff
         self.focusAxis =  0 #the currently focused axis
         
-        self.brushingModel = BrushingModel()
+        self.brushingModel       = BrushingModel()
         #self.crosshairControler = CrosshairControler() 
         self.brushingInterpreter = BrushingInterpreter(self.brushingModel, self.imageViews)
-        self.brushingControler = BrushingControler(self.brushingModel, self.posModel, labelsink)
+        self.brushingControler   = BrushingControler(self.brushingModel, self.posModel, labelsink)
+        
+        self.eventSwitch  = EventSwitch(self.imageViews,self.brushingInterpreter)
+        
         
         self._initConnects()
 

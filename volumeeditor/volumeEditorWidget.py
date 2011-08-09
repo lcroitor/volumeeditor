@@ -52,6 +52,7 @@ from navigationControler import NavigationControler, NavigationInterpreter
 from pixelpipeline.datasources import ArraySource, ArraySinkSource, LazyflowSinkSource
 
 from volumeEditor import VolumeEditor
+from eventswitch import EventSwitch
 
 #*******************************************************************************
 # V o l u m e E d i t o r W i d g e t                                          *
@@ -575,6 +576,11 @@ if __name__ == "__main__":
     label1Button.clicked.connect(label1Set)
     label2Button   = QPushButton("Label2")
     label2Button.clicked.connect(label2Set)
+    
+    #changed here
+    eventSwitchButton = QPushButton("Toggle")
+    eventSwitchButton.clicked.connect(t2.widget._ve.eventSwitch.toggle)
+    #eventSwitchButton.clicked.connect(t2.widget._ve.eventSwitch2.toggle)
 
     
     l = QVBoxLayout()
@@ -585,7 +591,11 @@ if __name__ == "__main__":
     l.addWidget(fitToViewButton)
     l.addWidget(layerWidgetButton)
     l.addWidget(label1Button)
-    l.addWidget(label2Button)  
+    l.addWidget(label2Button) 
+    #changed here
+    l.addWidget(eventSwitchButton)
+    
+    
     
     l.addStretch()
 

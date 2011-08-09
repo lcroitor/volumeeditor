@@ -325,9 +325,9 @@ class ImageView2D(QGraphicsView):
             self.customContextMenuRequested.emit(event.pos())
             return
 
-        if not self.drawingEnabled:
-            print "ImageView2D.mousePressEvent: drawing is not enabled"
-            return
+        #if not self.drawingEnabled:
+        #    print "ImageView2D.mousePressEvent: drawing is not enabled"
+        #   return
         
         if event.buttons() == Qt.LeftButton:
             #don't draw if flicker the view
@@ -430,6 +430,7 @@ class ImageView2D(QGraphicsView):
         else:
             self._deltaPan = self._deaccelerate(self._deltaPan)
             self._panning()
+            
     
     def mouseDoubleClickEvent(self, event):
         mousePos = self.mapToScene(event.pos())
