@@ -35,7 +35,7 @@
 #    e65f5bad2cd9fdaefbe7ceaafa0cce0e071b56e4
 
 from PyQt4.QtCore import Qt, pyqtSignal, QTimer
-from PyQt4.QtGui import QApplication, QWidget, QLabel, QSpinBox, \
+from PyQt4.QtGui import QApplication, QWidget, QLabel, QSpinBox, QRadioButton, QAbstractButton,QButtonGroup,\
                         QShortcut, QKeySequence, QSplitter, \
                         QVBoxLayout, QHBoxLayout, QPushButton, QToolButton, \
                         QSizePolicy, QColor
@@ -123,6 +123,7 @@ class VolumeEditorWidget(QWidget):
         self._channelSpinLabel = QLabel("Channel:")
         self._toolBoxLayout.addWidget(self._channelSpinLabel)
         self._toolBoxLayout.addLayout(channelLayout)
+        
 
         #time selector
         self._timeSpin = QSpinBox()
@@ -156,7 +157,7 @@ class VolumeEditorWidget(QWidget):
         def getTime(newT):
             self._timeSpin.setValue(newT)
         self._ve.posModel.timeChanged.connect(getTime)
-
+        
         # setup the layout for display
         self.splitter = QSplitter()
         self.splitter.setContentsMargins(0,0,0,0)
@@ -175,7 +176,7 @@ class VolumeEditorWidget(QWidget):
         for i, v in enumerate(self._ve.imageViews):
             v.hud = SliceSelectorHud()
             #connect interpreter
-            v.hud.sliceSelector.valueChanged.connect(partial(self._ve.navInterpret.changeSliceAbsolute, axis=i))
+            v.hud.sliceSelector.valueChanged.connect(partial(self._ve.navInterpreter.changeSliceAbsolute, axis=i))
             #hud
             v.hud.bgColor = self._ve.navCtrl.axisColors[i] #FIXME
             v.hud.label = axisLabels[i]
@@ -351,20 +352,6 @@ if __name__ == "__main__":
                 source = ArraySource(testVolume(N))
                 
                 layerstack.append( GrayscaleLayer( source ) )
-            
-            elif "3dvol" in argv:
-                import h5py
-                import os
-                fname = os.path.split(os.path.abspath(__file__))[0] +"/_testing/l.h5"
-                if not os.path.exists(fname):
-                    print "please run _testin/labeled3d.py to make a l.h5 file"
-                    app.quit()
-                    sys.exit(1)
-                f = h5py.File(fname, 'r')
-                d = f["volume/data"]
-                print d.shape, d.dtype
-                source = ArraySource(d)
-                layerstack.append( GrayscaleLayer( source ) )
                 
             elif "comp" in argv:
                 fn = os.path.split(os.path.abspath(__file__))[0] +"/_testing/5d.npy"
@@ -386,7 +373,6 @@ if __name__ == "__main__":
                 source = nucleisrc
 
             elif "layers" in argv:
-                import os
                 fn = os.path.split(os.path.abspath(__file__))[0] +"/_testing/5d.npy"
                 raw = np.load(fn)
                 print "loading file '%s'" % fn
@@ -435,7 +421,6 @@ if __name__ == "__main__":
                 source = nucleisrc
 
             elif "label" in argv:
-                import os
                 fn = os.path.split(os.path.abspath(__file__))[0] +"/_testing/5d.npy"
                 raw = np.load(fn)
 
@@ -455,12 +440,9 @@ if __name__ == "__main__":
 
                 #new shit
                 from lazyflow import operators
-                opLabels = operators.OpSparseLabelArray(g)                                
-                opLabels.inputs["shape"].setValue(raw.shape[:-1] + (1,))
-                opLabels.inputs["eraser"].setValue(100)                
-                opLabels.inputs["Input"][0,0,0,0,0] = 1                    
-                opLabels.inputs["Input"][0,0,0,1,0] = 2                    
-                
+                opLabels = operators.OpArrayPiper(g)                                
+                opLabels.inputs["Input"].setValue(numpy.zeros(raw.shape[:-1]+(1,),numpy.uint8))
+
                 labelsrc = LazyflowSinkSource(opLabels, opLabels.outputs["Output"], opLabels.inputs["Input"])
 
                 layer1 = RGBALayer( green = membranesrc, red = nucleisrc )
@@ -472,12 +454,8 @@ if __name__ == "__main__":
 
                 opImage  = operators.OpArrayPiper(g)
                 opImage.inputs["Input"].setValue(raw[:,:,:,:,0:1]/20)
-                opImage2  = operators.OpArrayPiper(g)
-                opImage2.inputs["Input"].setValue(raw[:,:,:,:,1:2]/10)
-                
                 opImageList = operators.Op5ToMulti(g)    
                 opImageList.inputs["Input0"].connect(opImage.outputs["Output"])
-                opImageList.inputs["Input1"].connect(opImage2.outputs["Output"])
 
 
                 opFeatureList = operators.Op5ToMulti(g)    
@@ -489,49 +467,16 @@ if __name__ == "__main__":
 #                opMulti = operators.Op20ToMulti(g)    
 #                opMulti.inputs["Input00"].connect(opG.outputs["Output"])
                 stacker.inputs["Images"].connect(opFeatureList.outputs["Outputs"])
-                stacker.inputs["AxisFlag"].setValue('c')
-                stacker.inputs["AxisIndex"].setValue(4)
-                
-                ################## Training
-                opMultiL = operators.Op5ToMulti(g)    
-                
-                opMultiL.inputs["Input0"].connect(opLabels.outputs["Output"])
-                
-                opTrain = operators.OpTrainRandomForest(g)
-                opTrain.inputs['Labels'].connect(opMultiL.outputs["Outputs"])
-                opTrain.inputs['Images'].connect(stacker.outputs["Output"])
-                opTrain.inputs['fixClassifier'].setValue(False)                
-
-                opClassifierCache = operators.OpArrayCache(g)
-                opClassifierCache.inputs["Input"].connect(opTrain.outputs['Classifier'])
-
-                ################## Prediction
-                opPredict=operators.OpPredictRandomForest(g)
-                opPredict.inputs['LabelsCount'].setValue(2)
-                opPredict.inputs['Classifier'].connect(opClassifierCache.outputs['Output'])    
-                opPredict.inputs['Image'].connect(stacker.outputs['Output'])            
-
-                
-                
-                selector=operators.OpSingleChannelSelector(g)
-                selector.inputs["Input"].connect(opPredict.outputs['PMaps'])
-                selector.inputs["Index"].setValue(1)
-                
-                opSelCache = operators.OpArrayCache(g)
-                opSelCache.inputs["blockShape"].setValue((1,5,5,5,1))
-                opSelCache.inputs["Input"].connect(selector.outputs["Output"])                
-                
-                predictsrc = LazyflowSource(opSelCache.outputs["Output"][0])
-                
-                layer2 = GrayscaleLayer( predictsrc, normalize = (0.0,1.0) )
-                layer2.name = "Prediction"
-                layerstack.append( layer2 )
-
+ 
                 layer3 = ColortableLayer( labelsrc, colorTable = [QColor(0,0,0,0).rgba(), QColor(255,0,0,255).rgba(), QColor(0,0,255,255).rgba()] )
                 layer3.name = "Labels"
                 layerstack.append(layer3)                
                 source = nucleisrc
 
+            elif "stripes" in argv:
+                source = ArraySource(stripes(50,35,20))
+                
+                layerstack.append( GrayscaleLayer( source ) )
             else:
                 raise RuntimeError("Invalid testing mode")
             
@@ -556,31 +501,25 @@ if __name__ == "__main__":
                 self.editor = VolumeEditor(shape, layerstack, useGL=useGL)
 
             self.widget = VolumeEditorWidget( self.editor )
-            
-            if "3dvol" in argv:
-                self.widget._ve.posModel.cursorPositionChanged.connect(self.widget._updateInfoLabels)
+            self.widget.show()
             
             if not 't' in sys.argv:
                 #show some initial position
                 self.editor.posModel.slicingPos = [5,10,2]
             else:
                 def randomMove():
-                    self.editor.posModel.slicingPos = [numpy.random.randint(0,shape[i]) for i in range(1,4)]
+                    self.editor.posModel.slicingPos = [numpy.random.randint(0,self.data.shape[i]) for i in range(3)]
                 t = QTimer(self)
-                t.setInterval(3000)
+                t.setInterval(1000)
                 t.timeout.connect(randomMove)
                 t.start()
 
     app = QApplication(sys.argv)
     
-    args = ['hugeslab', 'cuboid', '5d', 'comp', 'layers', 'manylayers', 't', 'label', '3dvol']
+    args = ['hugeslab', 'cuboid', '5d', 'comp', 'layers', 'manylayers', 't', 'label', 'stripes']
     
     if len(sys.argv) < 2 or not any(x in sys.argv for x in args) :
         print "Usage: python volumeeditor.py <testmode> %r" % args 
-        app.quit()
-        sys.exit(0)
-    if len(sys.argv) == 2 and "t" in sys.argv:
-        print "the 't' modifier needs to be used together with one of the other options."
         app.quit()
         sys.exit(0)
     
@@ -609,9 +548,22 @@ if __name__ == "__main__":
     #changed here
     eventSwitchButton = QPushButton("Toggle")
     eventSwitchButton.clicked.connect(t2.widget._ve.eventSwitch.toggle)
-    #eventSwitchButton.clicked.connect(t2.widget._ve.eventSwitch2.toggle)
+    
+    navInterpreter = QRadioButton("Navigation")
+    brushingInterpreter = QRadioButton("Brushing")
+    
+    
+    Interpreter=QButtonGroup()
+    Interpreter.addButton(navInterpreter)
+    Interpreter.addButton(brushingInterpreter)
+    navInterpreter.setChecked(True)
 
     
+    navInterpreter.clicked.connect(t2.widget._ve.navStateChanged)
+    brushingInterpreter.clicked.connect(t2.widget._ve.brushStateChanged)
+
+    
+
     l = QVBoxLayout()
     w = QWidget()
     w.setLayout(l)
@@ -623,6 +575,9 @@ if __name__ == "__main__":
     l.addWidget(label2Button) 
     #changed here
     l.addWidget(eventSwitchButton)
+    l.addWidget(navInterpreter)
+    l.addWidget(brushingInterpreter)
+
     
     
     
