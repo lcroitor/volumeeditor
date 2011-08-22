@@ -27,8 +27,9 @@
 #    authors and should not be interpreted as representing official policies, either expressed
 #    or implied, of their employers.
 
-from PyQt4.QtCore import QObject
-from PyQt4.QtGui  import QColor
+from PyQt4.QtCore import QObject, QEvent
+from PyQt4.QtGui  import QColor, QApplication
+from PyQt4.QtCore import Qt, pyqtSignal
 
 import numpy
 import time, copy
@@ -46,6 +47,7 @@ def posView2D(pos3d, axis):
 #*******************************************************************************
 
 class NavigationInterpreter(QObject):
+
     """
     Provides slots to listens to mouse/keyboard events from multiple
     slice views and interprets them as actions upon a N-D volume
@@ -139,7 +141,7 @@ class NavigationInterpreter(QObject):
             return
 
         self._model.cursorPos = newPos
-        
+
     def positionSlice(self, x, y, axis):
         newPos = copy.copy(self._model.slicingPos)
         i,j = posView2D([0,1,2], axis)
@@ -157,6 +159,23 @@ class NavigationInterpreter(QObject):
             if pos[i] < 0 or pos[i] >= self._model.shape[i]:
                 return False
         return True
+        
+    def onMouseMove(self,pos):
+        x,y = pos[0], pos[1]
+        for i in range(3):
+            self.positionCursor(x,y,axis=i)
+    def onWheel(self,delta,axis):
+        self.changeSliceRelative(delta,axis)
+        
+    def onMouseButtonDblClick(self,x,y,axis):
+        self.positionSlice(x,y,axis)
+
+    def onMouseButtonRelease(self,pos):
+        print "navigation is not enabled"
+        
+    def onLeftMouseButtonPress(self,pos,shape):
+        print "navigation is not enabled"
+        
     
 #*******************************************************************************
 # N a v i g a t i o n C o n t r o l e r                                        *
@@ -277,3 +296,4 @@ class NavigationControler(QObject):
         #re-configure the slice source
         for src in self._sliceSources[axis]:
             src.setThrough(1, num)
+
