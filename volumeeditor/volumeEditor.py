@@ -123,9 +123,9 @@ class VolumeEditor( QObject ):
         # navigation control
         self.posModel     = PositionModel(self._shape)
         self.navCtrl      = NavigationControler(self.imageViews, syncedSliceSources, self.posModel)
-        self.navInterpret = NavigationInterpreter(self.posModel)
+        self.navInterpreter = NavigationInterpreter(self.posModel)
         
-        self.eventSwitch  = EventSwitch(self.imageViews,self.navInterpret)
+        self.eventSwitch  = EventSwitch(self.imageViews,self.navInterpreter)
         
         # Add label widget to toolBoxLayout
         self.labelWidget = None
@@ -138,18 +138,17 @@ class VolumeEditor( QObject ):
         self.brushingInterpreter = BrushingInterpreter(self.brushingModel, self.imageViews)
         self.brushingControler   = BrushingControler(self.brushingModel, self.posModel, labelsink)
         
-        self.eventSwitch  = EventSwitch(self.imageViews,self.brushingInterpreter)
-        
         
         self._initConnects()
 
     def _initConnects(self):
+        
         for i, v in enumerate(self.imageViews):
             #connect interpreter
             v.shape  = self.posModel.sliceShape(axis=i)
-            v.mouseMoved.connect(partial(self.navInterpret.positionCursor, axis=i))
-            v.mouseDoubleClicked.connect(partial(self.navInterpret.positionSlice, axis=i))
-            v.changeSliceDelta.connect(partial(self.navInterpret.changeSliceRelative, axis=i))
+            #v.mouseMoved.connect(partial(self.navInterpreter.positionCursor, axis=i))
+            #v.mouseDoubleClicked.connect(partial(self.navInterpreter.positionSlice, axis=i))
+            #v.changeSliceDelta.connect(partial(self.navInterpreter.changeSliceRelative, axis=i))
             
         #connect controler
         self.posModel.channelChanged.connect(self.navCtrl.changeChannel)
@@ -323,3 +322,12 @@ class VolumeEditor( QObject ):
         temp = self._pendingLabels
         self._pendingLabels = []
         return temp
+        
+    def navStateChanged(self):
+        self.eventSwitch.setInterpreter(self.navInterpreter)
+    def brushStateChanged(self):
+        self.eventSwitch.setInterpreter(self.brushingInterpreter)
+        
+
+            
+            
