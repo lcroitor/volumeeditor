@@ -48,6 +48,8 @@ from positionModel import PositionModel
 from navigationControler import NavigationControler, NavigationInterpreter
 from brushingcontroler import BrushingInterpreter, BrushingControler, CrosshairControler
 from brushingmodel import BrushingModel
+from rectangularmodel import RectangularModel
+from rectangularInterpreter import RectangularInterpreter
 from pixelpipeline.imagesources import GrayscaleImageSource
 from pixelpipeline.imagesourcefactories import createImageSource
 from pixelpipeline.imagepump import ImagePump
@@ -138,6 +140,8 @@ class VolumeEditor( QObject ):
         self.brushingInterpreter = BrushingInterpreter(self.brushingModel, self.imageViews)
         self.brushingControler   = BrushingControler(self.brushingModel, self.posModel, labelsink)
         
+        self.rectangularModel = RectangularModel()
+        self.rectangularInterpreter = RectangularInterpreter(self.rectangularModel)
         
         self._initConnects()
 
@@ -327,6 +331,9 @@ class VolumeEditor( QObject ):
         self.eventSwitch.setInterpreter(self.navInterpreter)
     def brushStateChanged(self):
         self.eventSwitch.setInterpreter(self.brushingInterpreter)
+    def rectStateChanged(self):
+        print "rect select"
+        self.eventSwitch.setInterpreter(self.rectangularInterpreter)
         
 
             
