@@ -551,16 +551,19 @@ if __name__ == "__main__":
     
     navInterpreter = QRadioButton("Navigation")
     brushingInterpreter = QRadioButton("Brushing")
+    rectangularInterpreter = QRadioButton("RSelection")
     
     
     Interpreter=QButtonGroup()
     Interpreter.addButton(navInterpreter)
     Interpreter.addButton(brushingInterpreter)
+    Interpreter.addButton(rectangularInterpreter)
     navInterpreter.setChecked(True)
 
     
     navInterpreter.clicked.connect(t2.widget._ve.navStateChanged)
     brushingInterpreter.clicked.connect(t2.widget._ve.brushStateChanged)
+    rectangularInterpreter.clicked.connect(t2.widget._ve.rectStateChanged)
 
     
 
@@ -577,6 +580,7 @@ if __name__ == "__main__":
     l.addWidget(eventSwitchButton)
     l.addWidget(navInterpreter)
     l.addWidget(brushingInterpreter)
+    l.addWidget(rectangularInterpreter)
 
     
     
