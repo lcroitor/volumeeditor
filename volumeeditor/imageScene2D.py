@@ -173,7 +173,8 @@ class ImageScene2D(QGraphicsScene):
         
         self._patchAccessor = PatchAccessor(sliceShape[0], sliceShape[1], blockSize=self.blockSize)
         self.imagePatches = [[] for i in range(self._patchAccessor.patchCount)]
-            
+        
+        print "********************************"    
         self._renderThread = ImageSceneRenderThread(self.imagePatches, self.stackedImageSources, parent=self)
         self._renderThread.start()
         self._renderThread.patchAvailable.connect(self._schedulePatchRedraw)

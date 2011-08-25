@@ -178,7 +178,7 @@ class VolumeEditorWidget(QWidget):
         for i, v in enumerate(self._ve.imageViews):
             v.hud = SliceSelectorHud()
             #connect interpreter
-            v.hud.sliceSelector.valueChanged.connect(partial(self._ve.navInterpreter.changeSliceAbsolute, axis=i))
+            v.hud.sliceSelector.valueChanged.connect(partial(self._ve.navInterpret.changeSliceAbsolute, axis=i))
             #hud
             v.hud.bgColor = self._ve.navCtrl.axisColors[i] #FIXME
             v.hud.label = axisLabels[i]

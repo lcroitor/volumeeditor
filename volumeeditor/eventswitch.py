@@ -46,7 +46,6 @@ class EventSwitch(QObject):
         x, y = imageView.x, imageView.y
         
         if event.type()==QEvent.Wheel:
-            print "###################################"
             keys = QApplication.keyboardModifiers()
             k_alt = (keys == Qt.AltModifier)
             for i in range(3):

@@ -152,7 +152,7 @@ class VolumeEditor( QObject ):
         self.navCtrl      = NavigationControler(self.imageViews, syncedSliceSources, self.posModel, view3d=v3d)
         self.navInterpret = NavigationInterpreter(self.posModel)
         
-        self.eventSwitch  = EventSwitch(self.imageViews,self.navInterpreter)
+        self.eventSwitch  = EventSwitch(self.imageViews,self.navInterpret)
 
         # Add label widget to toolBoxLayout
         self.labelWidget = None
@@ -174,7 +174,7 @@ class VolumeEditor( QObject ):
         
         for i, v in enumerate(self.imageViews):
             #connect interpreter
-            v.shape  = self.posModel.sliceShape(axis=i)
+            v.sliceShape  = self.posModel.sliceShape(axis=i)
             #v.mouseMoved.connect(partial(self.navInterpreter.positionCursor, axis=i))
             #v.mouseDoubleClicked.connect(partial(self.navInterpreter.positionSlice, axis=i))
             #v.changeSliceDelta.connect(partial(self.navInterpreter.changeSliceRelative, axis=i))
