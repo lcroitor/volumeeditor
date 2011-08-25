@@ -44,7 +44,6 @@ import numpy, copy
 from functools import partial
 
 from quadsplitter import QuadView
-#from view3d.view3d import OverviewScene
       
 from sliceSelectorHud import SliceSelectorHud
 from positionModel import PositionModel
@@ -59,8 +58,14 @@ from eventswitch import EventSwitch
 #*******************************************************************************
 
 class VolumeEditorWidget(QWidget):
-    def __init__( self, volumeeditor, parent=None ):
+    def __init__( self, parent=None, editor=None ):
         super(VolumeEditorWidget, self).__init__(parent=parent)
+        if editor!=None:
+            self.init(editor)
+            
+        
+        
+    def init(self, volumeeditor):
         self._ve = volumeeditor
 
         self.setFocusPolicy(Qt.StrongFocus)
@@ -71,10 +76,7 @@ class VolumeEditorWidget(QWidget):
         self.quadview.addWidget(1, self._ve.imageViews[0])
         self.quadview.addWidget(2, self._ve.imageViews[1])
 
-        #3d overview
-        #self.overview = OverviewScene(self, self._ve._shape[1:4])
-        #self.quadview.addWidget(3, self.overview)
-        self.quadview.addWidget(3, QWidget(self))
+        self.quadview.addWidget(3, self._ve.view3d)
         #FIXME: resurrect        
         #self.overview.changedSlice.connect(self.changeSlice)
         #self._ve.changedSlice.connect(self.overview.ChangeSlice)
@@ -262,7 +264,7 @@ if __name__ == "__main__":
     import signal
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     
-    import os, sys
+    import os, sys, h5py
 
     import numpy as np
     from PyQt4.QtCore import QObject, QRectF, QTime
@@ -320,24 +322,27 @@ if __name__ == "__main__":
             QObject.__init__(self)
             
             layerstack = LayerStackModel()
+            g = Graph()
             
             if "hugeslab" in argv:
-                N = 2000
+                N = 500
                 
-                g = Graph()
-                op1 = OpDataProvider(g, (numpy.random.rand(1,N,2*N, 10,1)*255).astype(numpy.uint8))
+                hugeslab = (numpy.random.rand(1,N,2*N, 10,1)*255).astype(numpy.uint8)
+                
+                op1 = OpDataProvider(g, hugeslab)
                 op2 = OpDelay(g, 0.000003)
                 op2.inputs["Input"].connect(op1.outputs["Data"])
                 source = LazyflowSource(op2.outputs["Output"])
                 layers = [GrayscaleLayer( source )]
                 
                 layerstack.append( GrayscaleLayer( source ) )
+                
+                print "*** hugeslab has shape = %r" % (hugeslab.shape,)
 
             elif "5d" in argv:
                 file = os.path.split(os.path.abspath(__file__))[0] +"/_testing/5d.npy"
                 print "loading file '%s'" % file
                 
-                g = Graph()
                 op1 = OpDataProvider5D(g, file)
                 op2 = OpDelay(g, 0.000003)
                 op2.inputs["Input"].connect(op1.outputs["Data5D"])
@@ -352,13 +357,24 @@ if __name__ == "__main__":
                 source = ArraySource(testVolume(N))
                 
                 layerstack.append( GrayscaleLayer( source ) )
+            
+            elif "3dvol" in argv:
+                fname = os.path.split(os.path.abspath(__file__))[0] +"/_testing/l.h5"
+                if not os.path.exists(fname):
+                    print "please run _testin/labeled3d.py to make a l.h5 file"
+                    app.quit()
+                    sys.exit(1)
+                f = h5py.File(fname, 'r')
+                d = f["volume/data"]
+                print d.shape, d.dtype
+                source = ArraySource(d)
+                layerstack.append( GrayscaleLayer( source ) )
                 
             elif "comp" in argv:
                 fn = os.path.split(os.path.abspath(__file__))[0] +"/_testing/5d.npy"
                 raw = np.load(fn)
                 print "loading file '%s'" % fn
 
-                g = Graph()
                 op1 = OpDataProvider(g, raw[:,:,:,:,0:1]/20)
                 op2 = OpDelay(g, 0.00000)
                 op2.inputs["Input"].connect(op1.outputs["Data"])
@@ -378,7 +394,6 @@ if __name__ == "__main__":
                 print "loading file '%s'" % fn
                 print "raw data has shape %r", raw.shape
 
-                g = Graph()
                 op1 = OpDataProvider(g, raw[:,:,:,:,0:1]/10)
                 op2 = OpDelay(g, 0.00000)
                 op2.inputs["Input"].connect(op1.outputs["Data"])
@@ -406,7 +421,6 @@ if __name__ == "__main__":
                 raw = np.load(fn)
                 print "loading file '%s'" % fn
 
-                g = Graph()
                 op1 = OpDataProvider(g, raw[:,:,:,:,0:1]/10)
                 nucleisrc = LazyflowSource(op1.outputs["Data"])
                 op2 = OpDataProvider(g, raw[:,:,:,:,1:2]/5)
@@ -424,7 +438,6 @@ if __name__ == "__main__":
                 fn = os.path.split(os.path.abspath(__file__))[0] +"/_testing/5d.npy"
                 raw = np.load(fn)
 
-                g = Graph()
                 op1 = OpDataProvider(g, raw[:,:,:,:,0:1]/20)
                 op2 = OpDelay(g, 0.00000)
                 op2.inputs["Input"].connect(op1.outputs["Data"])
@@ -473,13 +486,9 @@ if __name__ == "__main__":
                 layerstack.append(layer3)                
                 source = nucleisrc
 
-            elif "stripes" in argv:
-                source = ArraySource(stripes(50,35,20))
-                
-                layerstack.append( GrayscaleLayer( source ) )
             else:
                 raise RuntimeError("Invalid testing mode")
-            
+        
             arr = None
             if hasattr(source, '_array'):
                 arr = source._array
@@ -493,15 +502,29 @@ if __name__ == "__main__":
                 shape = source._outslot.shape
             if len(shape) == 3:
                 shape = (1,)+shape+(1,)
+                
+            if "l" in sys.argv:
+                from lazyflow import operators
+                opLabels = operators.OpSparseLabelArray(g)                                
+                opLabels.inputs["shape"].setValue(shape[:-1] + (1,))
+                opLabels.inputs["eraser"].setValue(100)                
+                opLabels.inputs["Input"][0,0,0,0,0] = 1                    
+                opLabels.inputs["Input"][0,0,0,1,0] = 2
+                labelsrc = LazyflowSinkSource(opLabels, opLabels.outputs["Output"], opLabels.inputs["Input"])
+                layer = ColortableLayer( labelsrc, colorTable = [QColor(0,0,0,0).rgba(), QColor(255,0,0,255).rgba(), QColor(0,0,255,255).rgba()] )
+                layer.name = "Labels"
+                layerstack.append(layer)
 
-            if "label" in argv:
+            if "label" in argv or "l" in argv:
                 self.editor = VolumeEditor(shape, layerstack, labelsink=labelsrc, useGL=useGL)
                 self.editor.setDrawingEnabled(True)
             else:
                 self.editor = VolumeEditor(shape, layerstack, useGL=useGL)
 
-            self.widget = VolumeEditorWidget( self.editor )
-            self.widget.show()
+            self.widget = VolumeEditorWidget(parent=None, editor=self.editor)
+            
+            if "3dvol" in argv:
+                self.widget._ve.posModel.cursorPositionChanged.connect(self.widget._updateInfoLabels)
             
             if not 't' in sys.argv:
                 #show some initial position
@@ -595,7 +618,7 @@ if __name__ == "__main__":
     #show rudimentary layer widget
     model = t2.editor.layerStack
     ######################################################################
-    view = LayerWidget(model)
+    view = LayerWidget(None, model)
 
     w = QWidget()
     lh = QHBoxLayout(w)
