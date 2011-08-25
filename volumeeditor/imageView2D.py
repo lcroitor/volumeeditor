@@ -435,6 +435,7 @@ class ImageView2D(QGraphicsView):
     def mouseDoubleClickEvent(self, event):
         mousePos = self.mapToScene(event.pos())
         self.mouseDoubleClicked.emit(mousePos.x(), mousePos.y())
+        
 
     def changeSlice(self, delta):
         if self._isDrawing:
@@ -443,8 +444,8 @@ class ImageView2D(QGraphicsView):
             
             #FIXME:
             #self._drawManager.beginDrawing(self.mousePos, self.self.shape2D)
-        
         self.changeSliceDelta.emit(delta)
+        
         
         #FIXME resurrect
         #InteractionLogger.log("%f: changeSliceDelta(axis, num) %d, %d" % (time.clock(), self._axis, delta))

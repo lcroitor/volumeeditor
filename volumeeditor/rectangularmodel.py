@@ -21,8 +21,6 @@ class RectangularModel(QObject):
         self._changeSelection=False
         self.startPoint.x=-1
         self.startPoint.y=-1
-        self.scene = QGraphicsScene()
-
 
     def beginSelecting(self, pos):
         self._dragMode = True
@@ -47,11 +45,6 @@ class RectangularModel(QObject):
             self.rect.y = p2.y
             self.rect.height = p1.y-p2.y
         #TODO paint rectangle
-        tempi = QImage(QSize(self.rect.width, self.rect.height), QImage.Format_ARGB32_Premultiplied)
-        painter=QPainter(tempi)
-        print "painter active ?", painter.isActive()
-        painter.drawRect(self.rect.x,self.rect.y,self.rect.width,self.rect.height)
-        painter.end()
         self.scene.addRect(self.rect.x, self.rect.y, self.rect.width, self.rect.height, self.pen, self.brush )
         
     def moveTo(self,pos):

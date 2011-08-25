@@ -551,7 +551,7 @@ if __name__ == "__main__":
     
     navInterpreter = QRadioButton("Navigation")
     brushingInterpreter = QRadioButton("Brushing")
-    rectangularInterpreter = QRadioButton("RSelection")
+    rectangularInterpreter = QRadioButton("Rectangle Select")
     
     
     Interpreter=QButtonGroup()

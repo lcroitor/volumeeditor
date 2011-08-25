@@ -148,12 +148,14 @@ class NavigationInterpreter(QObject):
         newPos[i] = x
         newPos[j] = y
         if newPos == self._model.slicingPos:
+            print "new pos"
             return
         if not self._positionValid(newPos):
+            print "position valid"
             return
         
         self._model.slicingPos = newPos
-        
+        print "slicing pos"
     def _positionValid(self, pos):
         for i in range(3):
             if pos[i] < 0 or pos[i] >= self._model.shape[i]:
@@ -168,6 +170,7 @@ class NavigationInterpreter(QObject):
         self.changeSliceRelative(delta,axis)
         
     def onMouseButtonDblClick(self,x,y,axis):
+        print "on Mouse Button Double Click"
         self.positionSlice(x,y,axis)
 
     def onMouseButtonRelease(self,pos):

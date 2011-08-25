@@ -170,3 +170,7 @@ class BrushingModel(QObject):
         
         #update/move position
         self.pos = pos
+        
+
+        
+        

@@ -61,11 +61,12 @@ class BrushingInterpreter(QObject):
         self._imageViews = imageViews
         self._brushingModel = brushingModel
     
-       
-#        for i in range(3):
-#            self._imageViews[i].beginDraw.connect(self._brushingModel.beginDrawing)
-#            self._imageViews[i].endDraw.connect(self._brushingModel.endDrawing)
-#            self._imageViews[i].drawing.connect(self._brushingModel.moveTo)
+        '''
+        for i in range(3):
+            self._imageViews[i].beginDraw.connect(self._brushingModel.beginDrawing)
+            self._imageViews[i].endDraw.connect(self._brushingModel.endDrawing)
+            self._imageViews[i].drawing.connect(self._brushingModel.moveTo)
+        '''
             
     def onMouseMove(self,pos):
         print "on mouse Move"

@@ -67,6 +67,7 @@ class PositionModel(QObject):
         self.slicingPos  = self._slicingPos
         self.time        = self._time
         self.channel     = self._channel
+
         
     def sliceShape(self, axis):
         """
