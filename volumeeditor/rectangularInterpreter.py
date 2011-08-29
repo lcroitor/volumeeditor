@@ -20,16 +20,14 @@ class RectangularInterpreter(QObject):
             
     def onMouseMove(self,pos):
         if self._buttonDown:
-            print "on mouse Move"
             self._rectangularModel.moveTo(pos)
 
     def onLeftMouseButtonPress(self,pos, shape):
-        print "on left Mouse Button Pressed"
         self._buttonDown = True
+        print 'calling begin selecting with pos=%r' % (pos,)
         self._rectangularModel.beginSelecting(pos)       
         
     def onMouseButtonRelease(self,pos):
-        print "on Mouse Button Release"
         self._rectangularModel.endSelecting(pos)
         self._buttonDown = False
         
@@ -43,43 +41,45 @@ class RectangularInterpreter(QObject):
 
 
 class RectangularControler(QObject):
-    def __init__(self, imageViews, rectangularModel):
+    def __init__(self, rectangularModel,positionModel, imageViews):
         QObject.__init__(self, parent=None)
         self._rectangularModel = rectangularModel
+        self._positionModel = positionModel
         self._imageViews = imageViews
         #slice = self._imageViews2Ds.slice
         #rectItem = QGraphicsRectItem()
         self.pen=QPen(Qt.black)
         self.brush=QBrush(Qt.Dense6Pattern)
-        self.scene_data=[]
-        #self.rectangularModel.selectedRectangle.connect(self.paintEvent)
-        self._rectangularModel.argsChanged.connect(self._currentSelectedRectangleList)
+        self.sceneData=[]
         
 
-        def _currentSelectedRectangleList(self, watched):
-            imageView = watched.parent()
-            for i in range(3):
-                view = self._imageViews[i]
-                if view == imageView:
-                    break
-            view = imageView
+    def selectedRectList(self):
+        view = self._positionModel.activeView
+        print 'view ist', view 
+        activeView = self._imageViews[view]
+        print 'active view', activeView
+        print 'self.rect.x, self.rect.y, self.rect.width, self.rect.height', self._rectangularModel.rect.x, self._rectangularModel.rect.y, self._rectangularModel.rect.width, self._rectangularModel.rect.height, self.pen, self.brush
+        
             #view.scene.addRect(self._rectangularModel.rect.x, self._rectangularModel.rect.y, self._rectangularModel.rect.width, self._rectangularModel.rect.height, self.pen, self.brush)
-            self.scene_data.append({'routine':view.scene.addRect,'args':(self._rectangularModel.rect.x, self._rectangularModel.rect.y, self._rectangularModel.rect.width, self._rectangularModel.rect.height, self.pen, self.brush)})
+        self.sceneData.append({'routine':activeView.scene().addRect,'args':(self._rectangularModel.rect.x, self._rectangularModel.rect.y, self._rectangularModel.rect.width, self._rectangularModel.rect.height, self.pen, self.brush)})
             #view.scene.clear()
-        def draw_next_item(self):
-            d = self.scene_data.pop(len(self.scene_data)-1) # get last item
+        print 'list =', self.sceneData
+        self.draw_next_item()
+    def draw_next_item(self):
+            d = self.sceneData.pop(len(self.sceneData)-1) # get last item
             item = d['routine'](*d['args'])
+            print 'item is', item
             #item.show()
             #rPainter.drawItem()
             
-        '''
+    '''
         
-        def paintEvent(self):
-            rPainter = QPainter()
-            rPainter.begin(self)
+    def paintEvent(self):
+        rPainter = QPainter()
+        rPainter.begin(self)
         
-            self._draw_next_item(rPainter)
+        self._draw_next_item(rPainter)
         
-            rPainter.end()
+        rPainter.end()
             
         '''
