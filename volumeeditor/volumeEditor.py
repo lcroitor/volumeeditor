@@ -45,7 +45,7 @@ from brushingcontroler import BrushingInterpreter, BrushingControler
 from brushingmodel import BrushingModel
 
 from rectangularmodel import RectangularModel
-from rectangularInterpreter import RectangularInterpreter
+from rectangularInterpreter import RectangularInterpreter, RectangularControler
 from pixelpipeline.imagesources import GrayscaleImageSource
 from pixelpipeline.imagesourcefactories import createImageSource
 
@@ -163,6 +163,7 @@ class VolumeEditor( QObject ):
         
         self.rectangularModel = RectangularModel()
         self.rectangularInterpreter = RectangularInterpreter(self.rectangularModel)
+        self.rectangularControler = RectangularControler(self.rectangularModel, self.posModel, self.imageViews)
         
         def onBrushSize(s):
             print "onBrushSize"
@@ -209,6 +210,8 @@ class VolumeEditor( QObject ):
         self.posModel.timeChanged.connect(self.navCtrl.changeTime)
         self.posModel.slicingPositionChanged.connect(self.navCtrl.moveSlicingPosition)
         self.posModel.cursorPositionChanged.connect(self.navCtrl.moveCrosshair)
+        
+        self.rectangularModel.argsChanged.connect(self.rectangularControler.selectedRectList)
 
     def setDrawingEnabled(self, enabled): 
         for i in range(3):
