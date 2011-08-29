@@ -21,7 +21,7 @@ class EventSwitch(QObject):
             view.viewport().installEventFilter( self )
         self._imageViews = imageviews
         self._currentInterpreter=currentInterpreter
-        self._disabled = True
+        #self._disabled = True
  
     
     def setInterpreter(self, currentInterpreter):
@@ -30,21 +30,20 @@ class EventSwitch(QObject):
             
     
         
-    def toggle(self):
-        self._disabled = not self._disabled
+    #def toggle(self):
+        #self._disabled = not self._disabled
     
         
     def eventFilter( self, watched, event ):
         imageView = watched.parent()
-        if self._disabled:
-            return False
+        #if self._disabled:
+            #return False
         
         for i in range(3):
             x = self._imageViews[i]
             if x == imageView:
                 break
-        x, y = imageView.x, imageView.y
-        
+
         if event.type()==QEvent.Wheel:
             keys = QApplication.keyboardModifiers()
             k_alt = (keys == Qt.AltModifier)
@@ -64,24 +63,36 @@ class EventSwitch(QObject):
             return True
         
         if event.type()==QEvent.MouseButtonDblClick:
+            self.mousePos = imageView.mapScene2Data(imageView.mapToScene(event.pos()))
+            x = self.mousePos.x()
+            y = self.mousePos.y()
             for i in range(3):
                 self._currentInterpreter.onMouseButtonDblClick(x,y,axis=i)
 
             return True
             
         if event.type()==QEvent.MouseMove:
+            self.mousePos = imageView.mapScene2Data(imageView.mapToScene(event.pos()))
+            x = self.mousePos.x()
+            y = self.mousePos.y()
             pos = (x,y)
             self._currentInterpreter.onMouseMove(pos)
             return True
 
         if event.type()==QEvent.MouseButtonPress:
+            self.mousePos = imageView.mapScene2Data(imageView.mapToScene(event.pos()))
+            x = self.mousePos.x()
+            y = self.mousePos.y()
             pos = (x,y)
-            shape = imageView.shape
+            shape = imageView.sliceShape
             if event.buttons()==Qt.LeftButton:
                 self._currentInterpreter.onLeftMouseButtonPress(pos, shape)
                 return True
                             
         if event.type()==QEvent.MouseButtonRelease:
+            self.mousePos = imageView.mapScene2Data(imageView.mapToScene(event.pos()))
+            x = self.mousePos.x()
+            y = self.mousePos.y()
             pos = (x,y)
             self._currentInterpreter.onMouseButtonRelease(pos)
             return True

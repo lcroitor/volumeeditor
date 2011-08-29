@@ -57,6 +57,7 @@ class BrushingInterpreter(QObject):
         QObject.__init__(self, parent=None)
         self._imageViews = imageViews
         self._brushingModel = brushingModel
+        self._brushDown = False
     
         '''
         for i in range(3):
@@ -66,16 +67,20 @@ class BrushingInterpreter(QObject):
         '''
             
     def onMouseMove(self,pos):
-        print "on mouse Move"
-        self._brushingModel.moveTo(pos)
+        if self._brushDown:
+            print "on mouse Move"
+            self._brushingModel.moveTo(pos)
 
     def onLeftMouseButtonPress(self,pos, shape):
         print "on left Mouse Button Pressed"
+        self._brushDown = True
+        print 'calling begin drawing with pos=%r' % (pos,)
         self._brushingModel.beginDrawing(pos, shape)       
         
     def onMouseButtonRelease(self,pos):
         print "on Mouse Button Release"
         self._brushingModel.endDrawing(pos)
+        self._brushDown = False
         
     def onWheel(self,delta,axis):
         print "brushing is not enabled"

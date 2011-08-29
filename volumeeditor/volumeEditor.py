@@ -35,7 +35,7 @@
 #    e65f5bad2cd9fdaefbe7ceaafa0cce0e071b56e4
 
 from PyQt4.QtCore import Qt, pyqtSignal, QDir, QObject
-from PyQt4.QtGui import QApplication, QImageWriter, QWidget
+from PyQt4.QtGui import QApplication, QImageWriter, QWidget, QColor
 
 import numpy, qimage2ndarray, copy
 from functools import partial
@@ -150,9 +150,9 @@ class VolumeEditor( QObject ):
         if useVTK:
             v3d = self.view3d
         self.navCtrl      = NavigationControler(self.imageViews, syncedSliceSources, self.posModel, view3d=v3d)
-        self.navInterpret = NavigationInterpreter(self.posModel)
+        self.navInterpreter = NavigationInterpreter(self.posModel)
         
-        self.eventSwitch  = EventSwitch(self.imageViews,self.navInterpret)
+        self.eventSwitch  = EventSwitch(self.imageViews,self.navInterpreter)
 
         # Add label widget to toolBoxLayout
         self.labelWidget = None

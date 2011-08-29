@@ -178,7 +178,7 @@ class VolumeEditorWidget(QWidget):
         for i, v in enumerate(self._ve.imageViews):
             v.hud = SliceSelectorHud()
             #connect interpreter
-            v.hud.sliceSelector.valueChanged.connect(partial(self._ve.navInterpret.changeSliceAbsolute, axis=i))
+            v.hud.sliceSelector.valueChanged.connect(partial(self._ve.navInterpreter.changeSliceAbsolute, axis=i))
             #hud
             v.hud.bgColor = self._ve.navCtrl.axisColors[i] #FIXME
             v.hud.label = axisLabels[i]
@@ -569,8 +569,8 @@ if __name__ == "__main__":
     label2Button.clicked.connect(label2Set)
     
     #changed here
-    eventSwitchButton = QPushButton("Toggle")
-    eventSwitchButton.clicked.connect(t2.widget._ve.eventSwitch.toggle)
+    #eventSwitchButton = QPushButton("Toggle")
+    #eventSwitchButton.clicked.connect(t2.widget._ve.eventSwitch.toggle)
     
     navInterpreter = QRadioButton("Navigation")
     brushingInterpreter = QRadioButton("Brushing")
@@ -600,7 +600,7 @@ if __name__ == "__main__":
     l.addWidget(label1Button)
     l.addWidget(label2Button) 
     #changed here
-    l.addWidget(eventSwitchButton)
+    #l.addWidget(eventSwitchButton)
     l.addWidget(navInterpreter)
     l.addWidget(brushingInterpreter)
     l.addWidget(rectangularInterpreter)

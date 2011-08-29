@@ -65,6 +65,8 @@ class BrushingModel(QObject):
         self.penVis  = QPen(self.drawColor, self.brushSize, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
         self.penDraw = QPen(QColor(255,255,255), self.brushSize, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
         self.pos = None
+
+        
         self.erasing = False
         
         #on which layer do we want to draw when self.drawingEnabled?
@@ -124,7 +126,11 @@ class BrushingModel(QObject):
             self.penVis.setColor(self.erasingColor)
         else:
             self.penVis.setColor(self.drawColor)
-        self.pos = QPointF(pos.x()+0.0001, pos.y()+0.0001)
+        print 'xxxx'
+        print pos
+        print 'yyyy'
+        self.pos = (pos[0]+0.0001, pos[1]+0.0001)
+        print "selfcvsdsdfsdssssssssssssssssssssssssss"
         line = self.moveTo(pos)
         return line
 
@@ -151,8 +157,8 @@ class BrushingModel(QObject):
         return res
 
     def moveTo(self, pos):
-        oldX, oldY = self.pos.x(), self.pos.y()
-        x,y = pos.x(), pos.y()
+        oldX, oldY = self.pos[0], self.pos[1]
+        x,y = pos[0], pos[1]
         
         #print "BrushingModel.moveTo(pos=%r)" % (pos) 
         line = QGraphicsLineItem(oldX, oldY, x, y)
