@@ -2,8 +2,6 @@
 from PyQt4.QtCore import QObject
 from PyQt4.QtCore import Qt, pyqtSignal
 
-import qimage2ndarray
-
 #*******************************************************************************
 # C r o s s h a i r C o n t r o l e r                                          *
 #*******************************************************************************

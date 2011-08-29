@@ -27,14 +27,12 @@
 #    authors and should not be interpreted as representing official policies, either expressed
 #    or implied, of their employers.
 
-from PyQt4.QtCore import pyqtSignal, QObject, QThread, Qt, QSize, QPointF, QRectF, \
+from PyQt4.QtCore import pyqtSignal, QObject, Qt, QSize, QPointF, QRectF, \
                          QRect, QPoint, QSizeF
-from PyQt4.QtGui  import QWidget, QPen, QGraphicsScene, QColor, QGraphicsLineItem, \
+from PyQt4.QtGui  import QPen, QGraphicsScene, QColor, \
                          QImage, QPainter, QGraphicsLineItem
 
 import numpy
-import threading
-import time
 import qimage2ndarray
 
 #*******************************************************************************
@@ -115,8 +113,7 @@ class BrushingModel(QObject):
     def setBrushColor(self, color):
         self.drawColor = color
         self.penVis.setColor(color)
-        self.emit.brushColorChanged(self.drawColor)
-      
+        self.brushColorChanged.emit(self.drawColor)
     
     def beginDrawing(self, pos, sliceRect):
         self.sliceRect = sliceRect

@@ -27,31 +27,28 @@
 #    authors and should not be interpreted as representing official policies, either expressed
 #    or implied, of their employers.
 
-# TODO
-# TODO
-# TODO
-# port the following revisions:
-#    1f810747c21380eda916c2c5b7b5d1893f92663e
-#    e65f5bad2cd9fdaefbe7ceaafa0cce0e071b56e4
+from PyQt4.QtCore import Qt, pyqtSignal, QObject
+from PyQt4.QtGui import QApplication, QWidget, QBrush, QPen, QColor
 
 from PyQt4.QtCore import Qt, pyqtSignal, QDir, QObject
 from PyQt4.QtGui import QApplication, QImageWriter, QWidget, QColor
 
 import numpy, qimage2ndarray, copy
+
 from functools import partial
 
-from imageSaveThread import ImageSaveThread
-from historyManager import HistoryManager
 from imageScene2D import ImageScene2D
 from imageView2D import ImageView2D
 from positionModel import PositionModel
 from navigationControler import NavigationControler, NavigationInterpreter
-from brushingcontroler import BrushingInterpreter, BrushingControler, CrosshairControler
+from brushingcontroler import BrushingInterpreter, BrushingControler
 from brushingmodel import BrushingModel
+
 from rectangularmodel import RectangularModel
 from rectangularInterpreter import RectangularInterpreter
 from pixelpipeline.imagesources import GrayscaleImageSource
 from pixelpipeline.imagesourcefactories import createImageSource
+
 from pixelpipeline.imagepump import ImagePump
 from slicingtools import SliceProjection
 
@@ -77,10 +74,12 @@ class VolumeEditor( QObject ):
     zoomInFactor  = 1.1
     zoomOutFactor = 0.9
 
-    def __init__( self, shape, layerStackModel, labelsink=None, useGL = False):
+    def __init__( self, shape, layerStackModel, labelsink=None):
         super(VolumeEditor, self).__init__()
         assert(len(shape) == 5)
         self._shape = shape
+        
+        self._showDebugPatches = False
 
         #this setting controls the rescaling of the displayed _data to the full 0-255 range
         self.normalizeData = False
@@ -88,9 +87,6 @@ class VolumeEditor( QObject ):
         #this settings controls the timer interval during interactive mode
         #set to 0 to wait for complete brushstrokes !
         #self.drawUpdateInterval = 300
-
-        self._saveThread = ImageSaveThread(self)
-        self._history = HistoryManager(self)
 
         self.layerStack = layerStackModel
 
@@ -121,9 +117,9 @@ class VolumeEditor( QObject ):
 
         # three ortho image views
         self.imageViews = []
-        self.imageViews.append(ImageView2D(self.imageScenes[0], useGL=useGL))
-        self.imageViews.append(ImageView2D(self.imageScenes[1], useGL=useGL))
-        self.imageViews.append(ImageView2D(self.imageScenes[2], useGL=useGL))
+        self.imageViews.append(ImageView2D(self.imageScenes[0]))
+        self.imageViews.append(ImageView2D(self.imageScenes[1]))
+        self.imageViews.append(ImageView2D(self.imageScenes[2]))
 
         if useVTK:
             self.view3d = OverviewScene(shape=self._shape[1:4])
@@ -168,7 +164,36 @@ class VolumeEditor( QObject ):
         self.rectangularModel = RectangularModel()
         self.rectangularInterpreter = RectangularInterpreter(self.rectangularModel)
         
+        def onBrushSize(s):
+            print "onBrushSize"
+            b = QPen(QBrush(self.brushingModel.drawColor), s)
+            #b = QPen(QBrush(QColor(0,255,0)), 15) #for testing
+            for s in self.imageScenes:
+                s.setBrush(b)
+        def onBrushColor(c):
+            print "onBrushColor"
+            b = QPen(QBrush(c), self.brushingModel.brushSize)
+            #b = QPen(QBrush(QColor(0,255,0)), 15) #for testing
+            for s in self.imageScenes:
+                s.setBrush(b)
+        
+        self.brushingModel.brushSizeChanged.connect(onBrushSize)
+        self.brushingModel.brushColorChanged.connect(onBrushColor)
+        
         self._initConnects()
+
+    @property
+    def showDebugPatches(self):
+        return self._showDebugPatches
+    @showDebugPatches.setter
+    def showDebugPatches(self, show):
+        for s in self.imageScenes:
+            s.showDebugPatches = show
+        self._showDebugPatches = show
+
+    def scheduleSlicesRedraw(self):
+        for s in self.imageScenes:
+            s._invalidateRect()
 
     def _initConnects(self):
         
@@ -204,33 +229,6 @@ class VolumeEditor( QObject ):
                 imageScene.drawingEnabled = False
                 imageScene.crossHairCursor.setColor(QColor("black"))
 
-    def on_editChannels(self):
-        from ilastik.gui.channelEditDialog import EditChannelsDialog 
-        
-        dlg = EditChannelsDialog(self.ilastik.project.dataMgr.selectedChannels, self.ilastik.project.dataMgr[0]._dataVol._data.shape[-1], self)
-        
-        result = dlg.exec_()
-        if result is not None:
-            self.ilastik.project.dataMgr.selectedChannels = result
-
-    def on_saveAsImage(self):
-        sliceOffsetCheck = False
-        if self._shape[1]>1:
-            #stack z-view is stored in imageScenes[2], for no apparent reason
-            sliceOffsetCheck = True
-        timeOffsetCheck = self._shape[0]>1
-        formatList = QImageWriter.supportedImageFormats()
-        formatList = [x for x in formatList if x in ['png', 'tif']]
-        expdlg = ExportDialog(formatList, timeOffsetCheck, sliceOffsetCheck, None, parent=self.ilastik)
-        expdlg.exec_()
-
-        tempname = str(expdlg.path.text()) + "/" + str(expdlg.prefix.text())
-        filename = str(QDir.convertSeparators(tempname))
-        self._saveThread.start()
-        stuff = (filename, expdlg.timeOffset, expdlg.sliceOffset, expdlg.format)
-        self._saveThread.queue.append(stuff)
-        self._saveThread.imagePending.set()
-    
     def focusNextPrevChild(self, forward = True):
         """this method is overwritten from QWidget
            so that the user can cycle through the three slice views
@@ -255,9 +253,6 @@ class VolumeEditor( QObject ):
             scene.close()
             scene.deleteLater()
         self._imageViews = []
-        self._saveThread.stopped = True
-        self._saveThread.imagePending.set()
-        self._saveThread.wait()
         QApplication.processEvents()
         print "finished saving thread"
 
