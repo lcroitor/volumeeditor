@@ -15,10 +15,7 @@ class RectangularModel(QObject):
         self.pos = None
         self.startPoint=(-1,-1)
         self.lastPoint=None
-        self.currentPoint=None
-        #self.pen=QPen(Qt.black)
-        #self.brush=QBrush(Qt.Dense6Pattern)
-        self._dragMode = False
+        self._selectedCorner = False
         self.rect = QRectF()
 
 
@@ -26,54 +23,70 @@ class RectangularModel(QObject):
     def beginSelecting(self, pos):
         if self.startPoint == (-1,-1):
             self.startPoint = (pos[0]+0.0001, pos[1]+0.0001)
-            self._dragMode = True
             self.moveTo(pos)
+        else:
+            self.lastPoint = (self.rect.x + self.rect.width, self.rect.y + self.rect.height)
+            ## select the bottom-right corner of the rectangle
+            if self.lastPoint[0]-12 < pos[0] < self.lastPoint[0] + 12 and self.rect.y -12< pos[1] <self.rect.y + 12:
+                self.startPoint[0] = self.rect.x
+                self.startPoint[1] = self.rect.y + self.rect.height    
+                self._selectedCorner = True
+                self.moveTo(pos)
+            ## select the top-right corner of the rectangle
+            if self.lastPoint[0] -12 < pos[0] < self.lastPoint[0] + 12 and self.lastPoint[1] -12< pos[1] <self.lastPoint[1] + 12:
+                self.startPoint = (self.rect.x, self.rect.y)    
+                self._selectedCorner = True
+                self.moveTo(pos)
+            ## select the top-left corner of the rectangle
+            if self.rect.x -12 < pos[0] < self.rect.x + 12 and self.lastPoint[1] -12< pos[1] <self.lastPoint[1] + 12:
+                self.startPoint = (self.lastPoint[0], self.rect.y)  
+                self._selectedCorner = True
+                self.moveTo(pos)
+            ## select the bottom-left corner of the rectangle
+            if self.rect.x -12 < pos[0] < self.rect.x + 12 and self.rect.y -12< pos[1] <self.rect.y + 12:
+                self.startPoint = (self.lastPoint[0], self.lastPoint[1])   
+                self._selectedCorner = True
+                self.moveTo(pos)
             
-
-    
-    def drawRectangle(self, p1, p2):
-        if p1[0] < p2[0]:
-            self.rect.x = p1[0]
-            self.rect.width = p2[0]-p1[0]
-        else:
-            self.rect.x = p2[0]
-            self.rect.width = p1[0]-p2[0]
-        if p1[1] < p2[1]:
-            self.rect.y = p1[1]
-            self.rect.height = p2[1]-p1[1]
-        else:
-            self.rect.y = p2[1]
-            self.rect.height = p1[1]-p2[1]
-        print 'rect.x =',  self.rect.x
-        print 'rect.y =', self.rect.y
-        print 'rect.width =', self.rect.width
-        print 'rect.height =', self.rect.height
-        #self.scene.addRect(self.rect.x, self.rect.y, self.rect.width, self.rect.height, self.pen, self.brush )
-        self.argsChanged.emit(self.rect.x, self.rect.y, self.rect.width, self.rect.height)
 
     def moveTo(self,pos):
-        if self._dragMode:
-            self.currentPoint= (pos[0], pos[1])
-            print 'current Point =', self.currentPoint[0], self.currentPoint[1]
-            print 'start point = ' , self.startPoint[0], self.startPoint[1]
-            self.drawRectangle(self.startPoint, self.currentPoint)
-
+        #draw rectangle
+        if self.startPoint[0] < pos[0]:
+            self.rect.x = self.startPoint[0]
+            self.rect.width = pos[0]-self.startPoint[0]
         else:
-            self.currentPoint= (pos[0], pos[1])
-            print 'current Point =' , self.currentPoint[0], self.currentPoint[1]
-            print 'start point = ' , self.startPoint[0], self.startPoint[1]
-            self.drawRectangle(self.startPoint, self.currentPoint)
-            #self.selectedRectangle.emit(self.startPoint,self.currentPoint)
+            self.rect.x = pos[0]
+            self.rect.width = self.startPoint[0]-pos[0]
+        if self.startPoint[1] < pos[1]:
+            self.rect.y = self.startPoint[1]
+            self.rect.height = pos[1]-self.startPoint[1]
+        else:
+            self.rect.y = pos[1]
+            self.rect.height = self.startPoint[1]-pos[1]
+        print 'rect.x =',  self.rect.x, self.rect.y, self.rect.width, self.rect.height
+        #self.resize(pos[0],pos[1],self.rect.width, self.rect.height)
+        self.argsChanged.emit(self.rect.x, self.rect.y, self.rect.width, self.rect.height)
+    ''' 
+    def resize(self,x,y,width,height):
+        newRect=QRectF()
+        newRect.x = x
+        newRect.y = y
+        newRect.width=width
+        newRect.height=height
+        print 'newRect', newRect.x, newRect.y, newRect.width, newRect.height
+        if newRect == self.rect:
+            self.argsChanged.emit(self.rect.x, self.rect.y, self.rect.width, self.rect.height)
+        else:
+            self.rect=newRect
+            self.argsChanged.emit(self.rect.x, self.rect.y, self.rect.width, self.rect.height)
+    '''
+         
             
     def endSelecting(self, pos):
-        self._dragMode = False
-        self.moveTo(pos)
-
+        if self._selectedCorner is True:
+            self.moveTo(pos)
         
     def dumpSelecting(self, pos):
         self.startPoint = (-1,-1)
-        self._changeSelection=False
-
-    
-
-    
+        self._selectedCorner = False
+        
