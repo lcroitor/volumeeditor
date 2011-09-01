@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from PyQt4.QtCore import QObject, QRectF
+from PyQt4.QtCore import QObject, QRectF, pyqtSignal,QPointF
 from PyQt4.QtCore import Qt
 from PyQt4.QtGui  import QWidget, QPen, QBrush, QColor, QGraphicsScene, QGraphicsRectItem,\
                          QImage, QPainter
@@ -48,43 +48,27 @@ class RectangularControler(QObject):
         self.pen=QPen(Qt.black)
         self.brush=QBrush(Qt.Dense6Pattern)
         self.sceneData=[]
-        self.initialPos=None
-        
-    def selectedRectList(self):
+        self.width=self._rectangularModel.rect.height
+        self.height=self._rectangularModel.rect.width
 
+    def updateSceneRect(self,width,height):
         view = self._positionModel.activeView
         activeView = self._imageViews[view]
         self.initialPos = (self._rectangularModel.rect.x,self._rectangularModel.rect.y)
-        #self.initialPos=(x,y)
-        print 'initial pos is', self.initialPos
-        #self.mapPos = activeView.mapScene2Data(activeView.mapToScene(self.initialPos[0],self.initialPos[1]))
-        #self.mapPos = activeView.mapToScene(self.initialPos[0],self.initialPos[1])
-        
-        #self.mapPos = activeView.mapToScene(self.initialPos[0],self.initialPos[1])
-        #x = self.mapPos.x()
-        #y = self.mapPos.y()
-        
-        from PyQt4.QtCore import QPointF
-        mapPos = activeView.scene().scene2data.map(QPointF(self.initialPos[0],self.initialPos[1] ))
-        x,y = mapPos.x(), mapPos.y()
-        
-        #mapRect = activeView.scene().scene2data.mapRect(self._rectangularModel.rect)
-        #self._rectangularModel.resize(x,y,width,height)
-        
-        #wrong
-        width = self._rectangularModel.rect.height
-        height = self._rectangularModel.rect.width
-        
-        self.sceneData.append({'routine':activeView.scene().addRect,'args':(x, y, width, height, self.pen, self.brush)})
+        self.mapPos = activeView.scene().scene2data.map(QPointF(self.initialPos[0],self.initialPos[1] ))
+        self.x,self.y= self.mapPos.x(), self.mapPos.y()
+        if width == self.height and height==self.width:
+            self.sceneData.append({'routine':activeView.scene().addRect,'args':(self.x,self.y, self.width, self.height, self.pen, self.brush)})
+        else:
+            self.width=height
+            self.height=width
+            self.sceneData.append({'routine':activeView.scene().addRect,'args':(self.x,self.y, self.width, self.height, self.pen, self.brush)})
+            #self.sceneData[0]={'routine':activeView.scene().addRect,'args':(self.x,self.y, self.width, self.height, self.pen, self.brush)}
         activeView.scene().clear()
-        #print 'list =', self.sceneData
         self.draw_next_item()
+        
     def draw_next_item(self):
         d = self.sceneData.pop(len(self.sceneData)-1) # get last item
-        #item = self.sceneData.pop(len(self.sceneData)-1)
+        #d = self.sceneData.pop(0)
         item = d['routine'](*d['args'])
-        print 'item is', item
-        item.show()        
-
-        
-        
+        item.show()

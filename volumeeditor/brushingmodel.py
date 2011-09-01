@@ -123,11 +123,7 @@ class BrushingModel(QObject):
             self.penVis.setColor(self.erasingColor)
         else:
             self.penVis.setColor(self.drawColor)
-        print 'xxxx'
-        print pos
-        print 'yyyy'
         self.pos = (pos[0]+0.0001, pos[1]+0.0001)
-        print "selfcvsdsdfsdssssssssssssssssssssssssss"
         line = self.moveTo(pos)
         return line
 
