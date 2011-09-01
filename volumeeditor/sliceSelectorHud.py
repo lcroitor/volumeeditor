@@ -52,7 +52,6 @@ class LabelButtons(QLabel):
         self.pixmapWidth = width
         self.pixmapHeight = height
         
-        
     def setUndockIcon(self):
         self.setToolTip("Undock")
         pixmap = QPixmap(250, 250)
@@ -133,7 +132,7 @@ class LabelButtons(QLabel):
         points = QPolygonF()
         points.append(QPointF(125.0, 50.0))
         points.append(QPointF(200.0, 180.0))
-        points.append(QPointF(125.0, 50.0))
+        points.append(QPointF(50.0, 180.0))
         painter.drawPolygon(points)
         painter.end()
         pixmap = pixmap.scaled(QSize(self.pixmapWidth, self.pixmapHeight),Qt.KeepAspectRatio, Qt.SmoothTransformation)
@@ -154,9 +153,6 @@ class LabelButtons(QLabel):
         points.append(QPointF(125.0, 200.0))
         points.append(QPointF(200.0, 70.0))
         points.append(QPointF(50.0, 70.0))
-        
-        
-        #points  << QPointF(125.0, 200.0) << QPointF(200.0, 70.0) << QPointF(50.0, 70.0)
         painter.drawPolygon(points)
         painter.end()
         pixmap = pixmap.scaled(QSize(self.pixmapWidth, self.pixmapHeight),Qt.KeepAspectRatio, Qt.SmoothTransformation)
@@ -251,8 +247,6 @@ class imageView2DHud(QHBoxLayout):
         self.addWidget(self.axisLabel)
         
         self.sliceSelector = SpinBoxImageView(backgroundColor, foregroundColor, value, height, 12)
-#        self.sliceSelector.valueChanged.connect(self.spinBoxChanged)
-        self.addSpacing(4)
         self.addLayout(self.sliceSelector)
       
         self.addStretch()
@@ -420,6 +414,8 @@ class QuadStatusBar(QHBoxLayout):
         painter.setFont(font)
         painter.end()
         pixmap = pixmap.scaled(QSize(61,20),Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        
+        """
         self.grayScaleLabel.setPixmap(pixmap)
         self.grayScaleSpinBox = QSpinBox()
         self.grayScaleSpinBox.setAttribute(Qt.WA_TransparentForMouseEvents, True)
@@ -435,6 +431,7 @@ class QuadStatusBar(QHBoxLayout):
         self.grayScaleSpinBox.setFont(font)
         self.grayScaleSpinBox.setStyleSheet("QSpinBox { color: " + str(grayforegroundColor.name()) + "; font: bold; background-color: " + str(graybackgroundColor.name()) + "; border:0;}")
         self.addWidget(self.grayScaleSpinBox)
+        """
         
         self.addStretch()
         
@@ -458,9 +455,10 @@ class QuadStatusBar(QHBoxLayout):
         
         self.timeSpinBox = QSpinBox()
         self.addWidget(self.timeSpinBox)
-        
+    """    
     def setGrayScale(self, gray):
         self.grayScaleSpinBox.setValue(gray)
+    """
         
     def setMouseCoords(self, x, y, z):
         self.xSpinBox.setValue(x)

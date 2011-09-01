@@ -84,6 +84,10 @@ class NavigationInterpreter(QObject):
         newPos = copy.copy(self._model.slicingPos)
         newPos[axis] = newSlice
         
+        cursorPos = copy.copy(self._model.cursorPos)
+        cursorPos[axis] = newSlice
+        self._model.cursorPos  = cursorPos  
+
         self._model.slicingPos = newPos
 
     def changeSliceAbsolute(self, value, axis):
@@ -100,6 +104,11 @@ class NavigationInterpreter(QObject):
         newPos[axis] = value
         if not self._positionValid(newPos):
             return
+        
+        cursorPos = copy.copy(self._model.cursorPos)
+        cursorPos[axis] = value
+        self._model.cursorPos  = cursorPos  
+        
         self._model.slicingPos = newPos
         
     def sliceIntersectionIndicatorToggle(self, show):
@@ -123,7 +132,7 @@ class NavigationInterpreter(QObject):
         self._model.activeView = axis
         
         newPos = [x,y]
-        newPos.insert(axis, self._model.cursorPos[axis])
+        newPos.insert(axis, self._model.slicingPos[axis])
 
         if newPos == self._model.cursorPos:
             return
@@ -227,12 +236,13 @@ class NavigationControler(QObject):
 
         self.axisColors = [QColor(255,0,0,255), QColor(0,255,0,255), QColor(0,0,255,255)]
     
-    def moveCrosshair(self, newPos):
+    def moveCrosshair(self, newPos, oldPos):
         self._updateCrossHairCursor()
     
-    def moveSlicingPosition(self, newPos):
+    def moveSlicingPosition(self, newPos, oldPos):
         for i in range(3):
-            self._updateSlice(self._model.slicingPos[i], i)
+            if newPos[i] != oldPos[i]:
+                self._updateSlice(self._model.slicingPos[i], i)
         self._updateSliceIntersection()
         
         #when scrolling fast through the stack, we don't want to update
@@ -260,6 +270,8 @@ class NavigationControler(QObject):
     def _updateCrossHairCursor(self):
         y,x = posView2D(self._model.cursorPos, axis=self._model.activeView)
         self._views[self._model.activeView]._crossHairCursor.showXYPosition(x,y)
+        for i, v in enumerate(self._views):
+            v._crossHairCursor.setVisible( self._model.activeView == i )
     
     def _updateSliceIntersection(self):
         for axis, v in enumerate(self._views):

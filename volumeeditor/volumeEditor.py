@@ -28,7 +28,7 @@
 #    or implied, of their employers.
 
 from PyQt4.QtCore import Qt, pyqtSignal, QObject
-from PyQt4.QtGui import QApplication, QWidget, QBrush, QPen, QColor
+from PyQt4.QtGui import QApplication, QWidget, QBrush, QPen, QColor, QTransform
 
 from PyQt4.QtCore import Qt, pyqtSignal, QDir, QObject
 from PyQt4.QtGui import QApplication, QImageWriter, QWidget, QColor
@@ -112,14 +112,20 @@ class VolumeEditor( QObject ):
         self.imageScenes.append(ImageScene2D())
         self.imageScenes.append(ImageScene2D())
         self.imageScenes.append(ImageScene2D())
-        for i in xrange(3):
-            self.imageScenes[i].stackedImageSources = imagepumps[i].stackedImageSources
+        names = ['x', 'y', 'z']
+        for scene, name, pump in zip(self.imageScenes, names, imagepumps):
+            scene.setObjectName(name)
+            scene.stackedImageSources = pump.stackedImageSources
 
         # three ortho image views
         self.imageViews = []
         self.imageViews.append(ImageView2D(self.imageScenes[0]))
         self.imageViews.append(ImageView2D(self.imageScenes[1]))
         self.imageViews.append(ImageView2D(self.imageScenes[2]))
+        
+        self.imageViews[0].setTransform(QTransform(1,0,0,0,1,0,0,0,1))
+        self.imageViews[1].setTransform(QTransform(0,1,1,0,0,0))
+        self.imageViews[2].setTransform(QTransform(0,1,1,0,0,0))
 
         if useVTK:
             self.view3d = OverviewScene(shape=self._shape[1:4])

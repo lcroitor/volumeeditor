@@ -323,19 +323,19 @@ class ImageView2D(QGraphicsView):
             patchNr = -1
             
             for p in self.scene().brushingPatches(): 
-                if p.rectF.contains(self.mapToScene(event.pos())):
+                if p.patchRectF.contains(self.mapToScene(event.pos())):
                     break
             p.lock()
             painter = QPainter(p.image)
             painter.setPen(self.scene()._brush)
             
-            tL = p.rectF.topLeft()
+            tL = p.imageRectF.topLeft()
             o  = self.scene().data2scene.map(QPointF(oldX,oldY))
             n  = self.scene().data2scene.map(QPointF(x,y))
             
             painter.drawLine(o-tL, n-tL)
             painter.end()
-            p.dirty = True
+            p.dataVer += 1
             p.unlock()
             self.scene()._schedulePatchRedraw(patchNr)
             ### end FIXME

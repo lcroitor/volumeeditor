@@ -48,8 +48,8 @@ class PositionModel(QObject):
     
     timeChanged            = pyqtSignal(int)
     channelChanged         = pyqtSignal(int)
-    cursorPositionChanged  = pyqtSignal(object)
-    slicingPositionChanged = pyqtSignal(object)
+    cursorPositionChanged  = pyqtSignal(object, object)
+    slicingPositionChanged = pyqtSignal(object, object)
     
     def __init__(self, shape5D, parent=None):
         QObject.__init__(self, parent)
@@ -146,8 +146,9 @@ class PositionModel(QObject):
     def cursorPos(self, coordinates):
         if coordinates == self._cursorPos:
             return
+        oldPos = self._cursorPos
         self._cursorPos = coordinates
-        self.cursorPositionChanged.emit(self.cursorPos)
+        self.cursorPositionChanged.emit(self.cursorPos, oldPos)
     
     @property
     def slicingPos(self):
@@ -162,6 +163,7 @@ class PositionModel(QObject):
     def slicingPos(self, pos):
         if pos == self._slicingPos:
             return
+        oldPos = self._slicingPos
         self._slicingPos = pos
-        self.slicingPositionChanged.emit(self.slicingPos)
+        self.slicingPositionChanged.emit(self.slicingPos, oldPos)
         
