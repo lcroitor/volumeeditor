@@ -45,30 +45,31 @@ class RectangularControler(QObject):
         self._rectangularModel = rectangularModel
         self._positionModel = positionModel
         self._imageViews = imageViews
-        self.pen=QPen(Qt.black)
+        self.pen=QPen(Qt.blue)
         self.brush=QBrush(Qt.Dense6Pattern)
-        self.sceneData=[]
-        self.width=self._rectangularModel.rect.height
-        self.height=self._rectangularModel.rect.width
 
-    def updateSceneRect(self,width,height):
+        self.sceneData=[]
+
+    def updateSceneRect(self):
         view = self._positionModel.activeView
         activeView = self._imageViews[view]
-        self.initialPos = (self._rectangularModel.rect.x,self._rectangularModel.rect.y)
+        self.initialPos = (self._rectangularModel.rect.x, self._rectangularModel.rect.y)
         self.mapPos = activeView.scene().scene2data.map(QPointF(self.initialPos[0],self.initialPos[1] ))
         self.x,self.y= self.mapPos.x(), self.mapPos.y()
-        if width == self.height and height==self.width:
-            self.sceneData.append({'routine':activeView.scene().addRect,'args':(self.x,self.y, self.width, self.height, self.pen, self.brush)})
-        else:
-            self.width=height
-            self.height=width
-            self.sceneData.append({'routine':activeView.scene().addRect,'args':(self.x,self.y, self.width, self.height, self.pen, self.brush)})
-            #self.sceneData[0]={'routine':activeView.scene().addRect,'args':(self.x,self.y, self.width, self.height, self.pen, self.brush)}
-        activeView.scene().clear()
-        self.draw_next_item()
         
+
+        #activeRectItem = activeView.scene().addRect(0,0,0,0)
+        #activeRectItem.setRect((self.x, self.y, self._rectangularModel.rect.width, self._rectangularModel.rect.height, self.pen, self.brush))
+
+        self.sceneData.append({'routine':activeView.scene().addRect,'args':(self.x,self.y, self._rectangularModel.rect.width, self._rectangularModel.rect.height, self.pen, self.brush)})
+ 
+
+        activeView.scene().clear()
+        #item = activeRectItem
+        #item.show()
+        self.draw_next_item()
+  
     def draw_next_item(self):
         d = self.sceneData.pop(len(self.sceneData)-1) # get last item
-        #d = self.sceneData.pop(0)
         item = d['routine'](*d['args'])
         item.show()
