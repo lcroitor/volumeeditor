@@ -47,8 +47,9 @@ class RectangularControler(QObject):
         self._imageViews = imageViews
         self.pen=QPen(Qt.blue)
         self.brush=QBrush(Qt.Dense6Pattern)
+        #self.activeRect=QGraphicsRectItem()
+        #self.sceneData=[]
 
-        self.sceneData=[]
 
     def updateSceneRect(self):
         view = self._positionModel.activeView
@@ -57,19 +58,8 @@ class RectangularControler(QObject):
         self.mapPos = activeView.scene().scene2data.map(QPointF(self.initialPos[0],self.initialPos[1] ))
         self.x,self.y= self.mapPos.x(), self.mapPos.y()
         
-
-        #activeRectItem = activeView.scene().addRect(0,0,0,0)
-        #activeRectItem.setRect((self.x, self.y, self._rectangularModel.rect.width, self._rectangularModel.rect.height, self.pen, self.brush))
-
-        self.sceneData.append({'routine':activeView.scene().addRect,'args':(self.x,self.y, self._rectangularModel.rect.width, self._rectangularModel.rect.height, self.pen, self.brush)})
- 
-
         activeView.scene().clear()
-        #item = activeRectItem
-        #item.show()
-        self.draw_next_item()
-  
-    def draw_next_item(self):
-        d = self.sceneData.pop(len(self.sceneData)-1) # get last item
-        item = d['routine'](*d['args'])
-        item.show()
+        activeRect = activeView.scene().addRect(self.x, self.y, self._rectangularModel.rect.width, self._rectangularModel.rect.height, self.pen, self.brush)
+
+        activeRect.show()
+ 
