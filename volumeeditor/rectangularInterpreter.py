@@ -23,7 +23,7 @@ class RectangularInterpreter(QObject):
     def onLeftMouseButtonPress(self,pos, shape):
         self._buttonDown = True
         print 'begin selecting with pos=%r' % (pos,)
-        self._rectangularModel.beginSelecting(pos)       
+        self._rectangularModel.beginSelecting(pos, shape)       
         
     def onMouseButtonRelease(self,pos):
         self._rectangularModel.endSelecting(pos)
@@ -47,9 +47,6 @@ class RectangularControler(QObject):
         self._imageViews = imageViews
         self.pen=QPen(Qt.blue)
         self.brush=QBrush(Qt.Dense6Pattern)
-        #self.activeRect=QGraphicsRectItem()
-        #self.sceneData=[]
-
 
     def updateSceneRect(self):
         view = self._positionModel.activeView
@@ -57,9 +54,17 @@ class RectangularControler(QObject):
         self.initialPos = (self._rectangularModel.rect.x, self._rectangularModel.rect.y)
         self.mapPos = activeView.scene().scene2data.map(QPointF(self.initialPos[0],self.initialPos[1] ))
         self.x,self.y= self.mapPos.x(), self.mapPos.y()
-        
         activeView.scene().clear()
-        activeRect = activeView.scene().addRect(self.x, self.y, self._rectangularModel.rect.width, self._rectangularModel.rect.height, self.pen, self.brush)
-
+        item = QGraphicsRectItem(self.x,self.y,self._rectangularModel.rect.width, self._rectangularModel.rect.height)
+        item.setPen(self.pen)
+        item.setBrush(self.brush)
+        activeView.scene().addItem(item)
+        item.show()
+        '''
+        self.mapPos = activeView.scene().scene2data.map(QPointF(self.initialPos[0],self.initialPos[1] ))
+        self.x,self.y= self.mapPos.x(), self.mapPos.y()
+        activeView.scene().clear()
+        activeRect = activeView.scene().addRect(QRectF(self.x, self.y, self._rectangularModel.rect.width, self._rectangularModel.rect.height), self.pen, self.brush)
         activeRect.show()
- 
+        '''
+        
