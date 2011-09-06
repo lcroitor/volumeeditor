@@ -54,17 +54,19 @@ class RectangularControler(QObject):
         self.initialPos = (self._rectangularModel.rect.x, self._rectangularModel.rect.y)
         self.mapPos = activeView.scene().scene2data.map(QPointF(self.initialPos[0],self.initialPos[1] ))
         self.x,self.y= self.mapPos.x(), self.mapPos.y()
+        self.widthHeight = (self._rectangularModel.rect.width, self._rectangularModel.rect.height)
+        self.mapWidthHeight = activeView.scene().scene2data.map(QPointF(self.widthHeight[0],self.widthHeight[1]))
+        self.width = self.mapWidthHeight.x()
+        self.height = self.mapWidthHeight.y()
         activeView.scene().clear()
-        item = QGraphicsRectItem(self.x,self.y,self._rectangularModel.rect.width, self._rectangularModel.rect.height)
-        item.setPen(self.pen)
-        item.setBrush(self.brush)
-        activeView.scene().addItem(item)
-        item.show()
-        '''
-        self.mapPos = activeView.scene().scene2data.map(QPointF(self.initialPos[0],self.initialPos[1] ))
-        self.x,self.y= self.mapPos.x(), self.mapPos.y()
-        activeView.scene().clear()
-        activeRect = activeView.scene().addRect(QRectF(self.x, self.y, self._rectangularModel.rect.width, self._rectangularModel.rect.height), self.pen, self.brush)
-        activeRect.show()
-        '''
+        itemOne = QGraphicsRectItem(self.x,self.y,self.width, self.height)
+        itemOne.setPen(self.pen)
+        itemOne.setBrush(self.brush)
+        activeView.scene().addItem(itemOne)
+        itemOne.show()
+
+    
+        
+
+        
         
