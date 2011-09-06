@@ -57,16 +57,18 @@ class RectangularControler(QObject):
         self.widthHeight = (self._rectangularModel.rect.width, self._rectangularModel.rect.height)
         self.mapWidthHeight = activeView.scene().scene2data.map(QPointF(self.widthHeight[0],self.widthHeight[1]))
         self.width = self.mapWidthHeight.x()
-        self.height = self.mapWidthHeight.y()
+        self.height = self.mapWidthHeight.y() 
         activeView.scene().clear()
+
+        #make sure that the rectangle does not extend past the drawing area
+        if self.x + self.width > activeView.sceneRect().width():
+            self.width = activeView.sceneRect().width() - self.x
+        if self.y + self.height > activeView.sceneRect().height():
+            self.height = activeView.sceneRect().height() - self.y
+
+        
         itemOne = QGraphicsRectItem(self.x,self.y,self.width, self.height)
         itemOne.setPen(self.pen)
         itemOne.setBrush(self.brush)
         activeView.scene().addItem(itemOne)
         itemOne.show()
-
-    
-        
-
-        
-        
