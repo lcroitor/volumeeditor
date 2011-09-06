@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
 
+
 from PyQt4.QtCore import pyqtSignal, QObject, QRectF
                         
                          
                          
 class RectangularModel(QObject):
-    newRectangle = pyqtSignal()
-
+    rectangleChanged = pyqtSignal()
 
     def __init__(self):
         QObject.__init__(self)
@@ -21,9 +21,8 @@ class RectangularModel(QObject):
 
     def beginSelecting(self, pos, sliceRect):
         self.sliceRect = sliceRect
-        if  self.startPoint == (-1,-1):
+        if self.startPoint == (-1,-1):
             self.startPoint = (pos[0]+0.0001, pos[1]+0.0001)
-            self.startPointChanged.emit(self.startPoint[0],self.startPoint[1])
             self.moveTo(pos)
         else:
             self.lastPoint = (self.rect.x + self.rect.width, self.rect.y + self.rect.height)
@@ -67,13 +66,18 @@ class RectangularModel(QObject):
         else:
             self.rect.y = pos[1]
             self.rect.height = self.startPoint[1]-pos[1]
- 
-        self.newRectangle.emit()
-            
+        self.rectangleChanged.emit()
+
     def endSelecting(self, pos):
         if self._selectedCorner is True:
             self.moveTo(pos)
+
         
     def dumpSelecting(self, pos):
         self.startPoint = (-1,-1)
         self._selectedCorner = False
+    
+
+            
+
+        
