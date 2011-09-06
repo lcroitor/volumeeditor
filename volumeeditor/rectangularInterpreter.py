@@ -47,6 +47,9 @@ class RectangularControler(QObject):
         self._imageViews = imageViews
         self.pen=QPen(Qt.blue)
         self.brush=QBrush(Qt.Dense6Pattern)
+        #self.currentRect = QRectF()
+        self._rectangularModel.rectangleChanged.connect(self.updateSceneRect)
+
 
     def updateSceneRect(self):
         view = self._positionModel.activeView
@@ -71,4 +74,13 @@ class RectangularControler(QObject):
         itemOne.setPen(self.pen)
         itemOne.setBrush(self.brush)
         activeView.scene().addItem(itemOne)
+        print 'scene item', itemOne
         itemOne.show()
+    
+
+    
+    
+        
+
+        
+        
