@@ -3,6 +3,7 @@
 
 
 from PyQt4.QtCore import pyqtSignal, QObject, QRectF
+from PyQt4.QtGui  import QGraphicsItem
                         
                          
                          
@@ -26,11 +27,10 @@ class RectangularModel(QObject):
         if self.startPoint == (-1,-1) and not self.firstSelection:
             self.startPoint = (pos[0]+0.0001, pos[1]+0.0001)
             self.firstSelection = True
-            self.moveTo(pos)
         if self.firstSelection:
             self.updateStartPoint(pos)
-
         else:
+
             self.lastPoint = (self.rect.x + self.rect.width, self.rect.y + self.rect.height)
             ## select the bottom-right corner of the rectangle
             if self.lastPoint[0]-12 < pos[0] < self.lastPoint[0] + 12 and self.rect.y -12< pos[1] <self.rect.y + 12:
@@ -56,12 +56,12 @@ class RectangularModel(QObject):
                 self.startPoint = (self.lastPoint[0], self.lastPoint[1])
                 self._selectedCorner = True
                 self.moveTo(pos)
-         
+
+
     def updateStartPoint(self,pos):
         newStartPoint = (pos[0]+0.0001, pos[1]+0.0001)
         self.startPoint = (newStartPoint[0], newStartPoint[1])
         self.moveTo(pos)
-
 
     def moveTo(self,pos):
         #draw rectangle
@@ -81,15 +81,8 @@ class RectangularModel(QObject):
 
     def endSelecting(self, pos):
         if self._selectedCorner is True:
+            #self.lastPoint =(-1,-1)
             self.moveTo(pos)
-            
-
-        
-    def dumpSelecting(self, pos):
-        self.startPoint = (-1,-1)
-        self._selectedCorner = False
-    
-
             
 
         
