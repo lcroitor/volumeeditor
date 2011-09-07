@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
-from PyQt4.QtCore import QObject, QRectF, pyqtSignal,QPointF
+from PyQt4.QtCore import QObject, QPointF, QRectF
 from PyQt4.QtCore import Qt
-from PyQt4.QtGui  import QWidget, QPen, QBrush, QColor, QGraphicsScene, QGraphicsRectItem,\
-                         QImage, QPainter
-
-
-
+from PyQt4.QtGui  import  QPen, QBrush, QGraphicsRectItem
 
 
 class RectangularInterpreter(QObject):
@@ -47,6 +43,7 @@ class RectangularControler(QObject):
         self._imageViews = imageViews
         self.pen=QPen(Qt.blue)
         self.brush=QBrush(Qt.Dense6Pattern)
+        self.activeItem = None
         #self.currentRect = QRectF()
         self._rectangularModel.rectangleChanged.connect(self.updateSceneRect)
 
@@ -62,25 +59,30 @@ class RectangularControler(QObject):
         self.width = self.mapWidthHeight.x()
         self.height = self.mapWidthHeight.y() 
         activeView.scene().clear()
-
+        
         #make sure that the rectangle does not extend past the drawing area
         if self.x + self.width > activeView.sceneRect().width():
             self.width = activeView.sceneRect().width() - self.x
         if self.y + self.height > activeView.sceneRect().height():
             self.height = activeView.sceneRect().height() - self.y
 
-        
         itemOne = QGraphicsRectItem(self.x,self.y,self.width, self.height)
         itemOne.setPen(self.pen)
         itemOne.setBrush(self.brush)
+        #activeView.fitInView(itemOne, mode = Qt.IgnoreAspectRatio)
         activeView.scene().addItem(itemOne)
-        print 'scene item', itemOne
+        '''
+        self.activeItem = itemAt(self.x,self.y) 
+        if itemOne == self.activeItem:
+            self.qDebug() 
+            print  "You clicked on item", itemOne
+        else:
+            self.qDebug() 
+            print  "You didn't click on an item", itemOne
+ 
+        def itemAt(self, x,y):
+            pos = (x, y)
+            return pos
+        '''    
         itemOne.show()
-    
-
-    
-    
-        
-
-        
         
