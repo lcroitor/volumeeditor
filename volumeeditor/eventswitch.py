@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 from PyQt4.QtCore import QObject, QEvent, Qt
 from PyQt4.QtGui import QApplication
 
@@ -31,16 +32,24 @@ class EventSwitch(QObject):
         if event.type()==QEvent.Wheel:
             keys = QApplication.keyboardModifiers()
             k_alt = (keys == Qt.AltModifier)
+            k_ctrl = (keys == Qt.ControlModifier)
+
             for i in range(3):
                 
                 if event.delta() > 0:
                     if k_alt:
                         self._currentInterpreter.onWheel(10,axis=i)
+                    elif k_ctrl:
+                        scaleFactor = 1.1
+                        imageView.doScale(scaleFactor)
                     else:
                         self._currentInterpreter.onWheel(1,axis=i)
                 else:
                     if k_alt:
                         self._currentInterpreter.onWheel(-10,axis=i)
+                    elif k_ctrl:
+                        scaleFactor = 0.9
+                        imageView.doScale(scaleFactor)
                     else:
                         self._currentInterpreter.onWheel(-1,axis=i)
 
