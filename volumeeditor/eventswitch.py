@@ -1,15 +1,6 @@
 # -*- coding: utf-8 -*-
-from PyQt4.QtCore import QObject, QEvent, Qt, pyqtSignal
+from PyQt4.QtCore import QObject, QEvent, Qt
 from PyQt4.QtGui import QApplication
-
-
-
-from imageView2D import ImageView2D
-from positionModel import PositionModel
-from navigationControler import NavigationControler, NavigationInterpreter
-from brushingcontroler import BrushingControler, BrushingInterpreter
-from functools import partial
-from PyQt4.QtCore import SIGNAL
 
 
 
@@ -28,17 +19,10 @@ class EventSwitch(QObject):
         if self._currentInterpreter is not currentInterpreter:
             self._currentInterpreter=currentInterpreter
             
-    
-        
-    #def toggle(self):
-        #self._disabled = not self._disabled
-    
-        
+
     def eventFilter( self, watched, event ):
         imageView = watched.parent()
-        #if self._disabled:
-            #return False
-        
+
         for i in range(3):
             x = self._imageViews[i]
             if x == imageView:
@@ -101,8 +85,4 @@ class EventSwitch(QObject):
 
         return False
 
-        
-       
-        
-        
-	    
+
