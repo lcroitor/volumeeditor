@@ -4,6 +4,7 @@ from PyQt4.QtCore import Qt
 from PyQt4.QtGui  import  QPen, QBrush, QGraphicsRectItem, QPainter, QImage
 
 
+
 class RectangularInterpreter(QObject):
 
     def __init__(self, rectangularModel):
@@ -19,7 +20,7 @@ class RectangularInterpreter(QObject):
     def onLeftMouseButtonPress(self,pos, shape):
         self._buttonDown = True
         print 'begin selecting with pos=%r' % (pos,)
-        self._rectangularModel.beginSelecting(pos, shape)       
+        self._rectangularModel.beginSelecting(pos)       
         
     def onMouseButtonRelease(self,pos):
         self._rectangularModel.endSelecting(pos)
@@ -44,30 +45,21 @@ class RectangularControler(QObject):
         self.pen=QPen(Qt.blue)
         self.brush=QBrush(Qt.Dense6Pattern)
         self.activeItem = None
-        #self.currentRect = QRectF()
-        self._rectangularModel.rectangleChanged.connect(self.updateSceneRect)
+        self._rectangularModel.currentRectangleChanged.connect(self.updateSceneRect)
 
 
-    def updateSceneRect(self):
+    def updateSceneRect(self, x, y, w, h):
         view = self._positionModel.activeView
         activeView = self._imageViews[view]
-        self.initialPos = (self._rectangularModel.rect.x, self._rectangularModel.rect.y)
+        self.initialPos = (x, y)
         self.mapPos = activeView.scene().scene2data.map(QPointF(self.initialPos[0],self.initialPos[1] ))
         self.x,self.y= self.mapPos.x(), self.mapPos.y()
-        self.widthHeight = (self._rectangularModel.rect.width, self._rectangularModel.rect.height)
+        self.widthHeight = (w, h)
         self.mapWidthHeight = activeView.scene().scene2data.map(QPointF(self.widthHeight[0],self.widthHeight[1]))
         self.width = self.mapWidthHeight.x()
         self.height = self.mapWidthHeight.y() 
         activeView.scene().clear()
-            
-            
-        print 'self.x', self.x
-        print 'self.y', self.y
-        print 'self.width', self.width
-        print 'self.height', self.height
-        print 'activeView.sceneRect().width()', activeView.sceneRect().width()
-        print 'activeView.sceneRect().height()', activeView.sceneRect().height()
-        
+
         #make sure that the rectangle does not extend past the drawing area
         if self.x + self.width > activeView.sceneRect().width():
             self.width = activeView.sceneRect().width() - self.x
@@ -79,13 +71,18 @@ class RectangularControler(QObject):
             self.x = 0
         if self.y < 0:
             self.y = 0
+        
+        print 'self.x', self.x
+        print 'self.y', self.y
+        print 'self.width', self.width
+        print 'self.height', self.height
+        item = QGraphicsRectItem(self.x,self.y,self.width, self.height)
+        item.ensureVisible(rect=QRectF(self.x,self.y,self.width, self.height))
+        item.setPen(self.pen)
+        item.setBrush(self.brush)
+        activeView.scene().addItem(item)
+        item.show()
 
-        itemOne = QGraphicsRectItem(self.x,self.y,self.width, self.height)
-        itemOne.setPen(self.pen)
-        itemOne.setBrush(self.brush)
-        #activeView.fitInView(itemOne, mode = Qt.IgnoreAspectRatio)
-        activeView.scene().addItem(itemOne)
-        print 'activeView.scene()', activeView.scene()
         '''
         self.activeItem = itemAt(self.x,self.y) 
         if itemOne == self.activeItem:
@@ -99,6 +96,7 @@ class RectangularControler(QObject):
             pos = (x, y)
             return pos
         '''    
-        itemOne.show()
-
         
+        
+        
+
