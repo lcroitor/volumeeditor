@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from PyQt4.QtCore import QObject, QPointF, QRectF
 from PyQt4.QtCore import Qt
-from PyQt4.QtGui  import  QPen, QBrush, QGraphicsRectItem, QPainter, QImage
+from PyQt4.QtGui  import  QPen, QBrush, QGraphicsRectItem
 
 
 
@@ -51,6 +51,10 @@ class RectangularControler(QObject):
     def updateSceneRect(self, x, y, w, h):
         view = self._positionModel.activeView
         activeView = self._imageViews[view]
+        if x < 0:
+            x = 0
+        if y < 0:
+            y = 0
         self.initialPos = (x, y)
         self.mapPos = activeView.scene().scene2data.map(QPointF(self.initialPos[0],self.initialPos[1] ))
         self.x,self.y= self.mapPos.x(), self.mapPos.y()
@@ -67,10 +71,6 @@ class RectangularControler(QObject):
             self.height = activeView.sceneRect().height() - self.y
         if self.x > activeView.sceneRect().width():
             self.widht = self.x - activeView.sceneRect().width()
-        if self.x < 0:
-            self.x = 0
-        if self.y < 0:
-            self.y = 0
         
         print 'self.x', self.x
         print 'self.y', self.y
