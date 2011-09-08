@@ -77,8 +77,6 @@ class RectangularModel(QObject):
         print 'end selecting'
         self.selectedRect.append(QRectF(self.rect.x, self.rect.y, self.rect.width, self.rect.height))
         print 'selected Rect', self.selectedRect.pop(-1)
-        #self.startPoint = (-1,-1)
-        #self.lastPoint = (-1,-1)
-            
+
 
         
