@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from PyQt4.QtCore import QObject, QPointF, QRectF
 from PyQt4.QtCore import Qt
-from PyQt4.QtGui  import  QPen, QBrush, QGraphicsRectItem
+from PyQt4.QtGui  import  QPen, QBrush, QGraphicsRectItem, QPainter, QImage
 
 
 class RectangularInterpreter(QObject):
@@ -59,18 +59,33 @@ class RectangularControler(QObject):
         self.width = self.mapWidthHeight.x()
         self.height = self.mapWidthHeight.y() 
         activeView.scene().clear()
+            
+            
+        print 'self.x', self.x
+        print 'self.y', self.y
+        print 'self.width', self.width
+        print 'self.height', self.height
+        print 'activeView.sceneRect().width()', activeView.sceneRect().width()
+        print 'activeView.sceneRect().height()', activeView.sceneRect().height()
         
         #make sure that the rectangle does not extend past the drawing area
         if self.x + self.width > activeView.sceneRect().width():
             self.width = activeView.sceneRect().width() - self.x
         if self.y + self.height > activeView.sceneRect().height():
             self.height = activeView.sceneRect().height() - self.y
+        if self.x > activeView.sceneRect().width():
+            self.widht = self.x - activeView.sceneRect().width()
+        if self.x < 0:
+            self.x = 0
+        if self.y < 0:
+            self.y = 0
 
         itemOne = QGraphicsRectItem(self.x,self.y,self.width, self.height)
         itemOne.setPen(self.pen)
         itemOne.setBrush(self.brush)
         #activeView.fitInView(itemOne, mode = Qt.IgnoreAspectRatio)
         activeView.scene().addItem(itemOne)
+        print 'activeView.scene()', activeView.scene()
         '''
         self.activeItem = itemAt(self.x,self.y) 
         if itemOne == self.activeItem:
@@ -85,4 +100,5 @@ class RectangularControler(QObject):
             return pos
         '''    
         itemOne.show()
+
         
