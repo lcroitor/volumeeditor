@@ -169,7 +169,6 @@ class NavigationInterpreter(QObject):
         self.changeSliceRelative(delta,axis)
         
     def onMouseButtonDblClick(self,x,y,axis):
-        print "on Mouse Button Double Click"
         self.positionSlice(x,y,axis)
 
     def onMouseButtonRelease(self,pos):
