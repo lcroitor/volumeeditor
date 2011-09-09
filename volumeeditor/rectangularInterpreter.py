@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from PyQt4.QtCore import QObject, QPointF, QRectF
 from PyQt4.QtCore import Qt
-from PyQt4.QtGui  import  QPen, QBrush, QGraphicsRectItem
+from PyQt4.QtGui import QPen, QBrush, QGraphicsRectItem, QImage, QPainter
 
 
 
@@ -11,8 +11,7 @@ class RectangularInterpreter(QObject):
         QObject.__init__(self, parent=None)
         self._rectangularModel = rectangularModel
         self._buttonDown = False
-    
-            
+
     def onMouseMove(self,pos):
         if self._buttonDown:
             self._rectangularModel.moveTo(pos)
@@ -20,7 +19,7 @@ class RectangularInterpreter(QObject):
     def onLeftMouseButtonPress(self,pos, shape):
         self._buttonDown = True
         print 'begin selecting with pos=%r' % (pos,)
-        self._rectangularModel.beginSelecting(pos)       
+        self._rectangularModel.beginSelecting(pos)
         
     def onMouseButtonRelease(self,pos):
         self._rectangularModel.endSelecting(pos)
@@ -45,8 +44,8 @@ class RectangularControler(QObject):
         self.pen=QPen(Qt.blue)
         self.brush=QBrush(Qt.Dense6Pattern)
         self.activeItem = None
+        self.currentSelectedRects = []
         self._rectangularModel.currentRectangleChanged.connect(self.updateSceneRect)
-
 
     def updateSceneRect(self, x, y, w, h):
         view = self._positionModel.activeView
@@ -61,9 +60,7 @@ class RectangularControler(QObject):
         self.widthHeight = (w, h)
         self.mapWidthHeight = activeView.scene().scene2data.map(QPointF(self.widthHeight[0],self.widthHeight[1]))
         self.width = self.mapWidthHeight.x()
-        self.height = self.mapWidthHeight.y() 
-        activeView.scene().clear()
-
+        self.height = self.mapWidthHeight.y()
         #make sure that the rectangle does not extend past the drawing area
         if self.x + self.width > activeView.sceneRect().width():
             self.width = activeView.sceneRect().width() - self.x
@@ -71,32 +68,7 @@ class RectangularControler(QObject):
             self.height = activeView.sceneRect().height() - self.y
         if self.x > activeView.sceneRect().width():
             self.widht = self.x - activeView.sceneRect().width()
-        
-        print 'self.x', self.x
-        print 'self.y', self.y
-        print 'self.width', self.width
-        print 'self.height', self.height
-        item = QGraphicsRectItem(self.x,self.y,self.width, self.height)
-        item.ensureVisible(rect=QRectF(self.x,self.y,self.width, self.height))
-        item.setPen(self.pen)
-        item.setBrush(self.brush)
-        activeView.scene().addItem(item)
-        item.show()
 
-        '''
-        self.activeItem = itemAt(self.x,self.y) 
-        if itemOne == self.activeItem:
-            self.qDebug() 
-            print  "You clicked on item", itemOne
-        else:
-            self.qDebug() 
-            print  "You didn't click on an item", itemOne
- 
-        def itemAt(self, x,y):
-            pos = (x, y)
-            return pos
-        '''    
-        
-        
-        
-
+        activeView.scene().clear()
+        rect = activeView.scene().addRect(self.x,self.y,self.width, self.height, self.pen, self.brush)
+        rect.show()
