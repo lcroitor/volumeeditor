@@ -207,10 +207,7 @@ class VolumeEditor( QObject ):
         for i, v in enumerate(self.imageViews):
             #connect interpreter
             v.sliceShape  = self.posModel.sliceShape(axis=i)
-            #v.mouseMoved.connect(partial(self.navInterpreter.positionCursor, axis=i))
-            #v.mouseDoubleClicked.connect(partial(self.navInterpreter.positionSlice, axis=i))
-            #v.changeSliceDelta.connect(partial(self.navInterpreter.changeSliceRelative, axis=i))
-            
+
         #connect controler
         self.posModel.channelChanged.connect(self.navCtrl.changeChannel)
         self.posModel.timeChanged.connect(self.navCtrl.changeTime)
@@ -359,7 +356,6 @@ class VolumeEditor( QObject ):
     def brushStateChanged(self):
         self.eventSwitch.setInterpreter(self.brushingInterpreter)
     def rectStateChanged(self):
-        print "rect select"
         self.eventSwitch.setInterpreter(self.rectangularInterpreter)
         
 
