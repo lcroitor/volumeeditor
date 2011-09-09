@@ -28,6 +28,9 @@ class SliceRequest( object ):
 
     def cancel( self ):
         self._ar.cancel()
+        
+    def adjustPriority(self, delta):
+        self._ar.adjustPriority(delta)
 
     def _onNotify( self, result, package ):
         callback, kwargs = package
@@ -105,10 +108,10 @@ class SyncedSliceSources( QObject ):
             src.through = value
         self.setDirty((slice(None), slice(None)))
 
-    def __init__(self, slicesrcs = []):
+    def __init__(self, through = None, slicesrcs = []):
         super(SyncedSliceSources, self).__init__()
         self._srcs = set(slicesrcs)
-        self._through = None
+        self._through = through
 
     def __iter__( self ):
         return iter(self._srcs)
@@ -126,6 +129,7 @@ class SyncedSliceSources( QObject ):
 
     def add( self, sliceSrc ):
         assert isinstance( sliceSrc, SliceSource ), 'wrong type: %s' % str(type(sliceSrc))
+        sliceSrc.through = self.through
         self._srcs.add( sliceSrc )
         self.setDirty( (slice(None), slice(None)) ) 
 

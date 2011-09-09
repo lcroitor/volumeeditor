@@ -172,13 +172,11 @@ class VolumeEditor( QObject ):
         self.rectangularControler = RectangularControler(self.rectangularModel, self.posModel, self.imageViews)
         
         def onBrushSize(s):
-            print "onBrushSize"
             b = QPen(QBrush(self.brushingModel.drawColor), s)
             #b = QPen(QBrush(QColor(0,255,0)), 15) #for testing
             for s in self.imageScenes:
                 s.setBrush(b)
         def onBrushColor(c):
-            print "onBrushColor"
             b = QPen(QBrush(c), self.brushingModel.brushSize)
             #b = QPen(QBrush(QColor(0,255,0)), 15) #for testing
             for s in self.imageScenes:
@@ -213,6 +211,7 @@ class VolumeEditor( QObject ):
         self.posModel.timeChanged.connect(self.navCtrl.changeTime)
         self.posModel.slicingPositionChanged.connect(self.navCtrl.moveSlicingPosition)
         self.posModel.cursorPositionChanged.connect(self.navCtrl.moveCrosshair)
+        self.posModel.slicingPositionSettled.connect(self.navCtrl.settleSlicingPosition)
 
     def setDrawingEnabled(self, enabled): 
         for i in range(3):

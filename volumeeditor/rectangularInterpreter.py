@@ -68,7 +68,8 @@ class RectangularControler(QObject):
             self.height = activeView.sceneRect().height() - self.y
         if self.x > activeView.sceneRect().width():
             self.widht = self.x - activeView.sceneRect().width()
-
+        
+        
         activeView.scene().clear()
         rect = activeView.scene().addRect(self.x,self.y,self.width, self.height, self.pen, self.brush)
         rect.show()

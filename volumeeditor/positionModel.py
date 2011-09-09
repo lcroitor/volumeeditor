@@ -28,8 +28,8 @@
 #    or implied, of their employers.
 
 import numpy
-
-from PyQt4.QtCore import QObject, pyqtSignal
+from functools import partial
+from PyQt4.QtCore import QObject, pyqtSignal, QTimer
 
 #*******************************************************************************
 # P o s i t i o n M o d e l                                                    *
@@ -50,6 +50,9 @@ class PositionModel(QObject):
     channelChanged         = pyqtSignal(int)
     cursorPositionChanged  = pyqtSignal(object, object)
     slicingPositionChanged = pyqtSignal(object, object)
+    slicingPositionSettled = pyqtSignal(bool)
+    
+    scrollDelay = 300
     
     def __init__(self, shape5D, parent=None):
         QObject.__init__(self, parent)
@@ -69,6 +72,13 @@ class PositionModel(QObject):
         self.channel     = self._channel
         self._activeView = 0
 
+        
+        self._scrollTimer = QTimer()
+        self._scrollTimer.setInterval(self.scrollDelay)
+        self._scrollTimer.setSingleShot(True)
+        self._scrollTimer.timeout.connect(self._onScrollTimer)
+        
+        self._slicingSettled = True
         
     def sliceShape(self, axis):
         """
@@ -165,6 +175,19 @@ class PositionModel(QObject):
         if pos == self._slicingPos:
             return
         oldPos = self._slicingPos
+        
         self._slicingPos = pos
+        
+        if self._slicingSettled:
+            print "unsettle"
+            self._slicingSettled = False
+            self.slicingPositionSettled.emit(False)
+        self._scrollTimer.start()
+        
         self.slicingPositionChanged.emit(self.slicingPos, oldPos)
+        
+    def _onScrollTimer(self):
+        print "settled"
+        self._slicingSettled = True
+        self.slicingPositionSettled.emit(True)
         

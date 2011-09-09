@@ -27,9 +27,13 @@
 #    authors and should not be interpreted as representing official policies, either expressed
 #    or implied, of their employers.
 
+import volumeeditor
+from volumeeditor.colorama import Fore, Back, Style
+
 from functools import partial
-from PyQt4.QtCore import QRect, QRectF, QMutex, QPointF, Qt
-from PyQt4.QtGui import QGraphicsScene, QImage, QTransform, QPen, QColor, QBrush
+from PyQt4.QtCore import QRect, QRectF, QMutex, QPointF, Qt, QSizeF
+from PyQt4.QtGui import QGraphicsScene, QImage, QTransform, QPen, QColor, QBrush, \
+                        QFont
 
 from patchAccessor import PatchAccessor
 from imageSceneRendering import ImageSceneRenderThread
@@ -105,11 +109,11 @@ class ImageScene2D(QGraphicsScene):
     """
     
     # base patch size: blockSize x blockSize
-    blockSize = 128
+    blockSize = 256
     #
     # overlap between patches 
     # positive number prevents rendering artifacts between patches for certain zoom levels
-    overlap = 1
+    overlap = 0
     
     @property
     def stackedImageSources(self):
@@ -118,7 +122,7 @@ class ImageScene2D(QGraphicsScene):
     @stackedImageSources.setter
     def stackedImageSources(self, s):
         self._stackedImageSources = s
-        s.isDirty.connect(self._invalidateRect)
+        s.layerDirty.connect(self._onLayerDirty)
         self._initializePatches()
         s.stackChanged.connect(partial(self._invalidateRect, QRect()))
         s.aboutToResize.connect(self._onAboutToResize)
@@ -126,12 +130,10 @@ class ImageScene2D(QGraphicsScene):
         self._initializePatches()
 
     def _onAboutToResize(self, newSize):
-        print "<_onAboutToResize(newSize=%d), %r>" % (newSize, self)
         self._renderThread.stop()
         self._numLayers = newSize
         self._initializePatches()
         self._renderThread.start()
-        print "</_onAboutToResize, %r>" % self
 
     @property
     def showDebugPatches(self):
@@ -158,7 +160,6 @@ class ImageScene2D(QGraphicsScene):
             
         assert len(sceneShape) == 2
         self.setSceneRect(0,0, *sceneShape)
-        self.addRect(QRectF(0,0,*sceneShape), pen=QPen(QColor(255,0,0)))
         
         #The scene shape is in Qt's QGraphicsScene coordinate system,
         #that is the origin is in the top left of the screen, and the
@@ -199,6 +200,8 @@ class ImageScene2D(QGraphicsScene):
     
         self.data2scene = QTransform(0,1,1,0,0,0) 
         self.scene2data = self.data2scene.transposed()
+        
+        self._slicingPositionSettled = True
     
         def cleanup():
             self._renderThread.stop()
@@ -239,6 +242,13 @@ class ImageScene2D(QGraphicsScene):
         return self._imagePatches[self._numLayers]
     def brushingPatches(self):
         return self._imagePatches[self._numLayers+1]
+    
+    def _onLayerDirty(self, layerNr, rect):
+        for p in self._imagePatches[layerNr]:
+            if not rect.isValid() or p.patchRect.intersects(rect):
+                p.dataVer += 1
+        
+        self._invalidateRect(rect)
             
     def _invalidateRect(self, rect = QRect()):
         if not rect.isValid():
@@ -252,11 +262,16 @@ class ImageScene2D(QGraphicsScene):
                 p.image.fill(0)
                 p.imgVer = p.dataVer
                 p.unlock()
+            
+            for layerNr in range(self._numLayers):
+                for p in self._imagePatches[layerNr]:
+                    p.lock()
+                    p.dataVer += 1
+                    p.unlock() 
         
         for p in self.compositePatches():
             if not rect.isValid() or rect.intersects(p.patchRect):
                 #convention: if a rect is invalid, it is infinitely large
-                
                 p.dataVer += 1
                 self._schedulePatchRedraw(p.patchNr)
                 
@@ -275,7 +290,7 @@ class ImageScene2D(QGraphicsScene):
         #
         #To compensate, adjust the rectangle slightly (less than one pixel,
         #so it should not matter) 
-        self.invalidate(p.patchRectF.adjusted(0.3,0.3,-0.3,-0.3), QGraphicsScene.BackgroundLayer)
+        self.invalidate(p.patchRectF.adjusted(0.6,0.6,-0.6,-0.6), QGraphicsScene.BackgroundLayer)
 
     def drawForeground(self, painter, rect):
         for p in self.brushingPatches():
@@ -284,19 +299,32 @@ class ImageScene2D(QGraphicsScene):
             painter.drawImage(p.imageRectF.topLeft(), p.image)
             p.unlock()
     
+    def indicateSlicingPositionSettled(self, settled):
+        self._slicingPositionSettled = settled
+    
     def drawBackground(self, painter, rect):
         #Find all patches that intersect the given 'rect'.
-        for p in self.compositePatches():
-            p.lock()
-            if p.imgVer != p.dataVer and p.reqVer != p.dataVer and rect.intersects(p.patchRectF):
-                if self._showDebugPatches:
-                    print "ImageScene2D '%s' asks for patch=%d [%r]" % (self.objectName(), p.patchNr, p.patchRectF)
-                self._renderThread.requestPatch(p.patchNr)
-                p.reqVer = p.dataVer
-            p.unlock()
+        for patchNr in range(len(self._imagePatches[0])):
+            p = self._imagePatches[0][patchNr]            
+            if rect.intersects(p.patchRectF):
+                for layerNr in range(self._numLayers):
+                    p = self._imagePatches[layerNr][patchNr]
+                    p.lock()
+                    
+                    if p.imgVer != p.dataVer and p.reqVer != p.dataVer:
+                        #
+                        if volumeeditor.verboseRequests:
+                            volumeeditor.printLock.acquire()
+                            print Fore.RED + "ImageScene2D '%s' asks for layer=%d, patch %d = (x=%d, y=%d, w=%d, h=%d)" \
+                                  % (self.objectName(), layerNr, p.patchNr, p.patchRectF.x(), p.patchRectF.y(), \
+                                     p.patchRectF.width(), p.patchRectF.height()) + Fore.RESET
+                            volumeeditor.printLock.release()
+                        #
+                        self._renderThread.requestPatch((layerNr, p.patchNr))
+                        p.reqVer = p.dataVer
+                    p.unlock()
         
         for p in self.compositePatches():
-            
             if not p.patchRectF.intersect(rect):
                 continue
             
@@ -304,14 +332,45 @@ class ImageScene2D(QGraphicsScene):
             painter.drawImage(p.imageRectF.topLeft(), p.image)
             p.unlock()
 
-            if self._showDebugPatches:
-                if p.imgVer != p.dataVer:
-                    painter.setBrush(QBrush(QColor(255,0,0), Qt.DiagCrossPattern))
-                    painter.setPen(QColor(255,255,255))
-                else:
-                    painter.setBrush(QBrush(QColor(0,255,0), Qt.NoBrush))
-                    painter.setPen(QColor(0,255,0))
-                adjRect = p.patchRectF.adjusted(5,5,-5,-5)
-                painter.drawRect(adjRect)
-                painter.drawText(p.patchRectF.topLeft()+QPointF(20,20), "%d" % p.patchNr)
+            if self._slicingPositionSettled:
+                painter.save()
+                painter.setOpacity(0.5)
+                
+                dirtyColor = QColor(255,0,0)
+                doneColor  = QColor(0,255,0)
+                
+                numDirtyLayers = 0
+                for layerNr in range(self._numLayers):
+                    _p = self._imagePatches[layerNr][p.patchNr]
+                    _p.lock()
+                    if _p.imgVer != _p.dataVer:
+                        numDirtyLayers += 1
+                    _p.unlock()
+                    
+                if numDirtyLayers > 0:
+                    painter.setBrush(QBrush(dirtyColor, Qt.SolidPattern))
+                    painter.setPen(dirtyColor)
+                    
+                    w,h = p.patchRectF.width(), p.patchRectF.height()
+                    
+                    rectangle = QRectF(p.patchRectF.center()-QPointF(w/4,h/4), QSizeF(w/2, h/2));
+                    startAngle = 0 * 16
+                    spanAngle  = int(numDirtyLayers/float(self._numLayers)*360.0) * 16
+                    painter.drawPie(rectangle, startAngle, spanAngle);
+                    
+                    painter.setBrush(QBrush(dirtyColor, Qt.NoBrush))
+                    adjRect = p.patchRectF.adjusted(5,5,-5,-5)
+                    painter.drawRect(adjRect)
+                
+                if self._showDebugPatches:
+                    if numDirtyLayers > 0:
+                        painter.setBrush(QBrush(dirtyColor, Qt.NoBrush))
+                        painter.setPen(dirtyColor) 
+                    else:
+                        painter.setBrush(QBrush(doneColor, Qt.NoBrush))
+                        painter.setPen(doneColor)
+                    adjRect = p.patchRectF.adjusted(5,5,-5,-5)
+                    painter.drawRect(adjRect)
+                    
+                painter.restore()
                     

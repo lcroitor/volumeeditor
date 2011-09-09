@@ -1,3 +1,6 @@
+import volumeeditor
+from volumeeditor.colorama import Fore, Back, Style
+
 from PyQt4.QtCore import QObject, QRect, pyqtSignal, QMutex
 from PyQt4.QtGui import QImage
 from qimage2ndarray import gray2qimage, array2qimage, alpha_view, rgb_view
@@ -58,6 +61,13 @@ class GrayscaleImageSource( ImageSource ):
         self._arraySource2D.isDirty.connect(self.setDirty)
 
     def request( self, qrect ):
+        if volumeeditor.verboseRequests:
+            volumeeditor.printLock.acquire()
+            print Fore.RED + "  GrayscaleImageSource '%s' requests (x=%d, y=%d, w=%d, h=%d)" \
+            % (self.objectName(), qrect.x(), qrect.y(), qrect.width(), qrect.height()) \
+            + Fore.RESET
+            volumeeditor.printLock.release()
+            
         assert isinstance(qrect, QRect)
         s = rect2slicing(qrect)
         req = self._arraySource2D.request(s)
@@ -99,11 +109,14 @@ class GrayscaleImageRequest( object ):
     
     def cancel( self ):
         self.cancelLock()
-        self._arrayreq.cancel()
+        #self._arrayreq.cancel()
+        self._arrayreq.adjustPriority(-50)        
         self._canceled = True
         self.cancelUnlock()
     
     def _onNotify( self, result, package ):
+        if self._canceled:
+            return
         img = self.toImage()
         callback = package[0]
         kwargs = package[1]
@@ -123,6 +136,13 @@ class AlphaModulatedImageSource( ImageSource ):
         self._arraySource2D.isDirty.connect(self.setDirty)
 
     def request( self, qrect ):
+        if volumeeditor.verboseRequests:
+            volumeeditor.printLock.acquire()
+            print Fore.RED + "  AlphaModulatedImageSource '%s' requests (x=%d, y=%d, w=%d, h=%d)" \
+            % (self.objectName(), qrect.x(), qrect.y(), qrect.width(), qrect.height()) \
+            + Fore.RESET
+            volumeeditor.printLock.release()
+            
         assert isinstance(qrect, QRect)
         s = rect2slicing(qrect)
         req = self._arraySource2D.request(s)
@@ -168,10 +188,13 @@ class AlphaModulatedImageRequest( object ):
     def cancel( self ):
         self.cancelLock()
         self._arrayreq.cancel()
+        self._arrayreq.adjustPriority(-50)   
         self._canceled = True
         self.cancelUnlock()
     
     def _onNotify( self, result, package ):
+        if self._canceled:
+            return        
         img = self.toImage()
         callback = package[0]
         kwargs = package[1]
@@ -191,6 +214,13 @@ class ColortableImageSource( ImageSource ):
         self._colorTable = colorTable
         
     def request( self, qrect ):
+        if volumeeditor.verboseRequests:
+            volumeeditor.printLock.acquire()
+            print Fore.RED + "  ColortableImageSource '%s' requests (x=%d, y=%d, w=%d, h=%d)" \
+            % (self.objectName(), qrect.x(), qrect.y(), qrect.width(), qrect.height()) \
+            + Fore.RESET
+            volumeeditor.printLock.release()
+            
         assert isinstance(qrect, QRect)
         s = rect2slicing(qrect)
         req = self._arraySource2D.request(s)
@@ -230,10 +260,13 @@ class ColortableImageRequest( object ):
     def cancel( self ):
         self.cancelLock()
         self._arrayreq.cancel()
+        self._arrayreq.adjustPriority(-50)   
         self._canceled = True
         self.cancelUnlock()
     
     def _onNotify( self, result, package ):
+        if self._canceled:
+            return        
         img = self.toImage()
         callback = package[0]
         kwargs = package[1]
@@ -265,6 +298,13 @@ class RGBAImageSource( ImageSource ):
             arraySource.isDirty.connect(self.setDirty)
 
     def request( self, qrect ):
+        if volumeeditor.verboseRequests:
+            volumeeditor.printLock.acquire()
+            print Fore.RED + "  RGBAImageSource '%s' requests (x=%d, y=%d, w=%d, h=%d)" \
+            % (self.objectName(), qrect.x(), qrect.y(), qrect.width(), qrect.height()) \
+             + Fore.RESET
+            volumeeditor.printLock.release()
+            
         assert isinstance(qrect, QRect)
         s = rect2slicing( qrect )
         r = self._channels[0].request(s)
@@ -322,11 +362,14 @@ class RGBAImageRequest( object ):
     def cancel( self ):
         self.cancelLock()
         for r in self._requests:
-            r.cancel()
+            #r.cancel()
+            r.adjustPriority(-50)   
         self._canceled = True
         self.cancelUnlock()
 
     def _onNotify( self, result, package ):
+        if self._canceled:
+            return        
         channel = package[0]
         self._requestsFinished[channel] = True
         if all(self._requestsFinished):

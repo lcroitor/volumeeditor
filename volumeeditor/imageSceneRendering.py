@@ -1,6 +1,8 @@
 from PyQt4.QtCore import QThread, pyqtSignal, Qt, QMutex
 from PyQt4.QtGui import QPainter
 
+import volumeeditor
+
 import threading
 from collections import deque
 
@@ -15,6 +17,7 @@ class Requests(object):
         self._r = set()
 
     def addRequest(self, reqId, request):
+        assert isinstance(reqId, tuple)
         self._mutex.lock()
         
         if not reqId in self._id2r:
@@ -25,6 +28,7 @@ class Requests(object):
         self._mutex.unlock()
         
     def removeById(self, reqId):
+        assert isinstance(reqId, tuple)
         self._mutex.lock()
         if id in self._id2r:
             for req in self._id2r[reqId]:
@@ -82,11 +86,11 @@ class ImageSceneRenderThread(QThread):
         self._stackedIms = stackedImageSources
         self._runningRequests = Requests()
 
-    def requestPatch(self, patchNr):
-        self._runningRequests.removeById(patchNr)
+    def requestPatch(self, layerPatch):
+        self._runningRequests.removeById(layerPatch)
         
-        if patchNr not in self._queue:
-            self._queue.append(patchNr)
+        if layerPatch not in self._queue:
+            self._queue.append(layerPatch)
             self._dataPending.set()
 
     def stop(self):
@@ -129,25 +133,33 @@ class ImageSceneRenderThread(QThread):
         thisPatch = self._imagePatches[patchLayer][patchNumber]
         
         ### one layer of this patch is done, just assign the newly arrived image
+        thisPatch.lock()
         thisPatch.image = image
+        thisPatch.imgVer = thisPatch.reqVer
+        thisPatch.unlock()
         ### ...done
         
         numLayers = len(self._imagePatches) - 2
         compositePatch = self._imagePatches[numLayers][patchNumber]
     
-        ### render the composite patch ######             
+        ### render the composite patch ######
         compositePatch.lock()
         compositePatch.dirty = True
         p = QPainter(compositePatch.image)
         r = compositePatch.imageRectF
         p.fillRect(0, 0, round(r.width()), round(r.height()), Qt.white)
 
-        for layerNr in range(numLayers-1, -1, -1):
-            if not self._stackedIms[layerNr].visible:
-                continue
-            patch = self._imagePatches[layerNr][patchNumber]
-            p.setOpacity(self._stackedIms[layerNr].opacity)
-            p.drawImage(0, 0, patch.image)
+        for i, v in enumerate(reversed(self._stackedIms)):
+            visible, layerOpacity, layerImageSource = v
+            if visible:
+                layerNr = len(self._stackedIms) - i - 1
+                patch = self._imagePatches[layerNr][patchNumber]
+                
+                if patch.imgVer != patch.dataVer:
+                    continue
+                
+                p.setOpacity(layerOpacity)
+                p.drawImage(0, 0, patch.image)
         p.end()
         compositePatch.imgVer = compositePatch.reqVer
         
@@ -163,17 +175,26 @@ class ImageSceneRenderThread(QThread):
         self._runningRequests.removeByRequest(request)
 
     def _takeJob(self):
-        patchNr = self._queue.pop()
+        #the queue might have been emptied via cancelAll()
+        #fix this properly TODO
+        layerPatch = None
+        try:
+            layerPatch = self._queue.pop()
+        except:
+            return
+        layerNr, patchNr = layerPatch
         
         rect = self._imagePatches[0][patchNr].imageRect
         
-        for layerNr in range(len(self._stackedIms)):
-            layer = self._stackedIms[layerNr]
-            imageSource = self._stackedIms._layerToIms[layer]
-            if layer.visible:
-                request = imageSource.request(rect)
-                self._runningRequests.addRequest(patchNr, request)
-                request.notify(self._onPatchFinished, request=request, patchNumber=patchNr, patchLayer=layerNr)
+        if volumeeditor.verboseRequests:
+            volumeeditor.printLock.acquire()
+            print "  ImageSceneRenderThread._takeJob: requesting layer=%d, patch=%d {rect=%s}" \
+                  % (layerNr, patchNr, volumeeditor.strQRect(rect))
+            volumeeditor.printLock.release()
+            
+        request = self._stackedIms.getImageSource(layerNr).request(rect)
+        self._runningRequests.addRequest((layerNr, patchNr), request)
+        request.notify(self._onPatchFinished, request=request, patchNumber=patchNr, patchLayer=layerNr)
 
     def _runImpl(self):
         self._dataPending.wait()
